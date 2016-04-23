@@ -20,3 +20,14 @@ add_isim(test_uart_tx
     ${CMAKE_CURRENT_SOURCE_DIR}/../utest.vlib
 )
 add_itest(test_uart_tx)
+
+add_isim(test_uart_rx
+  SRCS
+    ${CMAKE_CURRENT_SOURCE_DIR}/uart_rx_tb.v
+    ${CMAKE_CURRENT_SOURCE_DIR}/../modules/uart/uart_rx.v
+  ARGS
+    -I${CMAKE_CURRENT_SOURCE_DIR}/..
+  DEPENDS
+    ${CMAKE_CURRENT_SOURCE_DIR}/../utest.vlib
+)
+add_itest(test_uart_rx)
