@@ -1,0 +1,7 @@
+`define TEST_PRELUDE integer numfails=0
+`define TEST_DONE if(numfails==0) begin $display("All Pass"); $finish(); end else begin $display("!!!!! %d Failure(s) !!!!!", numfails); $stop(); end
+`define TIMEOUT(T) initial begin #T $display("Timeout!"); $stop; end
+
+`define ASSERT(X,MSG) if(X) $display("ok - %s", MSG); else begin numfails=numfails+1; $display("not ok - %s", MSG); end
+`define ASSERT_EQUAL(X, Y) if((X)==(Y)) $display("ok - %x == %x", X, Y); else begin numfails=numfails+1; $display("not ok - %x == %x", X, Y); end
+`define DIAG(MSG) begin $display("# %s", MSG); end
