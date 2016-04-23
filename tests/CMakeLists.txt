@@ -37,6 +37,7 @@ add_isim(test_uart_loop
     ${CMAKE_CURRENT_SOURCE_DIR}/uart_loop_tb.v
     ${CMAKE_CURRENT_SOURCE_DIR}/../modules/uart/uart_tx.v
     ${CMAKE_CURRENT_SOURCE_DIR}/../modules/uart/uart_rx.v
+    ${CMAKE_CURRENT_SOURCE_DIR}/../modules/uart/uart_rx_filter.v
   ARGS
     -I${CMAKE_CURRENT_SOURCE_DIR}/..
   DEPENDS

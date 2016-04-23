@@ -2,34 +2,48 @@ module test;
 
 `include "utest.vlib"
 
-`TEST_PRELUDE(0)
+`TEST_PRELUDE(6)
 
 `TEST_CLOCK(clk,1);
 
-`TEST_TIMEOUT(200)
+`TEST_TIMEOUT(2000)
+
+reg [2:0] clk8_cnt = 0;
+
+always @(posedge clk)
+  clk8_cnt <= clk8_cnt+1;
+
+wire clk8 = clk8_cnt[2];
 
 reg send = 0, reset = 1;
 reg [7:0] in = 0;
-wire done, dcon, ready;
+wire done, dcon1, dcon2, ready;
 wire [7:0] dout;
 
 uart_tx TX(
-  .clk(clk),
+  .clk(clk8),
   .send(send),
   .in(in),
   .done(done),
-  .out(dcon)
+  .out(dcon1)
+);
+
+uart_rx_filter RXF(
+  .bit_clk(clk8),
+  .samp_clk(clk),
+  .in(dcon1),
+  .out(dcon2)
 );
 
 uart_rx RX(
-  .clk(clk),
+  .clk(clk8),
   .reset(reset),
-  .in(dcon),
+  .in(dcon2),
   .ready(ready),
   .out(dout)
 );
 
-`define TICK @(posedge clk); @(negedge clk);
+`define TICK @(posedge clk8); @(negedge clk8);
 
 task uart_txrx;
   input [7:0] val;

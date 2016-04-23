@@ -2,7 +2,7 @@ module uart_rx_filter(
   input wire samp_clk,
   input wire in,
   input wire bit_clk,
-  output wire out
+  output reg out
 );
 
 reg [1:0] sync; // synchronize async input with shift register
