@@ -1,3 +1,4 @@
+// ceil(log(v, 2))
 function integer log2(input integer v);
   begin
     log2=0;

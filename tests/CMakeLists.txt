@@ -44,3 +44,16 @@ add_isim(test_uart_loop
     ${CMAKE_CURRENT_SOURCE_DIR}/../utest.vlib
 )
 add_itest(test_uart_loop)
+
+add_isim(test_uart_baud
+  SRCS
+    ${CMAKE_CURRENT_SOURCE_DIR}/uart_baud_tb.v
+    ${CMAKE_CURRENT_SOURCE_DIR}/../modules/uart/uart_baud.v
+  ARGS
+    -I${CMAKE_CURRENT_SOURCE_DIR}/..
+    -I${CMAKE_CURRENT_SOURCE_DIR}/../util
+  DEPENDS
+    ${CMAKE_CURRENT_SOURCE_DIR}/../utest.vlib
+    ${CMAKE_CURRENT_SOURCE_DIR}/../util/log2.vlib
+)
+add_itest(test_uart_baud)
