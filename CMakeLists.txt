@@ -43,14 +43,15 @@ function(add_isim target)
   # OPTS VALUES LISTS
   cmake_parse_arguments(A "" "" "SRCS;ARGS;DEPENDS" ${ARGN})
 
-  message(STATUS "isim ${target}")
-
-  add_custom_target(${target} ALL
-    COMMAND ${IVERILOG_EXECUTABLE} -o ${CMAKE_CURRENT_BINARY_DIR}/${target}.vvp -DSIM "-DVCD=\"\\\"${target}.vcd\\\"\"" -g2001 -Wall ${A_ARGS} ${A_SRCS}
-    DEPENDS ${IVERILOG_EXECUTABLE} ${A_SRCS} ${A_DEPENDS}
-    SOURCES ${A_DEPENDS}
-#    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  add_custom_command(
     COMMENT "Compile ${target}.vvp"
+    OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/${target}.vvp
+    DEPENDS ${IVERILOG_EXECUTABLE} ${A_SRCS} ${A_DEPENDS}
+    COMMAND ${IVERILOG_EXECUTABLE} -o ${CMAKE_CURRENT_BINARY_DIR}/${target}.vvp -DSIM "-DVCD=\"\\\"${target}.vcd\\\"\"" -g2001 -Wall ${A_ARGS} ${A_SRCS}
+  )
+  add_custom_target(${target} ALL
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${target}.vvp
+    SOURCES ${A_DEPENDS}
   )
 endfunction()
 
