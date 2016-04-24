@@ -9,7 +9,9 @@ module uart(
   input wire        send, // raise and hold for TX until done
   output wire       done, // pulsed when send complete
 
+  output wire       busy, // RX in progress
   output wire       ready,// pulsed when new data received
+  output wire       rxerr,// RX bad frame
   output wire [0:7] dout,  // RX data
 
   output wire       samp_clk, // oversampled baud rate clock (debug)
@@ -69,8 +71,10 @@ uart_rx RX(
   .samp_clk(samp_clk),
   .reset(reset),
   .in(dcon),
+  .busy(busy),
   .ready(ready),
   .out(dout),
+  .err(rxerr),
   .bit_clk(rx_bit_clk)
 );
 

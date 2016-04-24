@@ -1,5 +1,4 @@
 set_io clk 21
-set_io reset 20
 
 set_io led[0] 99
 set_io led[1] 98

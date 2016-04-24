@@ -15,8 +15,8 @@ if len(sys.argv)>3:
     Fout *= float(sys.argv[3])
 
 F = Fin/Fout
-print("Input  freq", Fin, "hz")
-print("Output freq", Fout, "hz")
+print("Input  freq", Fin, "Hz")
+print("Output freq", Fout, "Hz")
 print("Fraction   ", F)
 
 print("Input  period", 1/Fin, "s")
@@ -41,4 +41,5 @@ for N in range(32):
 results.sort()
 
 for err, N, D, Fact in results:
-    print("W=%2d   I=%10d  err=%.3f %%  F=%f"%(N,D,err*100,Fact))
+    Fout2 = Fin/Fact
+    print("W=%2d   I=%10d  err=%.3f %%  F=%.6f  freq=%.1f Hz"%(N,D,err*100,Fact,Fout2))

@@ -4,7 +4,9 @@ module uart_rx(
   input wire       in,
   input wire       reset,
   output reg [0:7] out,
+  output wire      busy,
   output reg       ready,
+  output reg       err,
   output wire      bit_clk
 );
 
@@ -27,6 +29,8 @@ assign bit_clk = phase_cnt==(2**Oversample)/2-1; //{1'b0, {Oversample-1{1'b1}}};
 
 reg [3:0] state = 0;
 
+assign busy = state!=0;
+
 always @(posedge ref_clk)
   if(!samp_clk)
   begin
@@ -37,19 +41,15 @@ always @(posedge ref_clk)
     ready <= 0;
     out   <= 0;
     state <= 0;
+    err   <= 0;
   end
   else if(state==0) // wait for rising edge of start bit
   begin
     ready <= 0;
     out   <= 0;
-    if(in==0)
-    begin // continue waiting
-      state <= 0;
-    end
-    else
-    begin // have start bit
-      state <= 1; // phase_cnt starts to run
-    end
+    err   <= 0;
+    if(in==0) state <= 0; // continue waiting
+    else      state <= 1; // have start bit, phase_cnt starts to run
   end
   else if(!bit_clk) // don't proceed unless sync'd
   begin
@@ -59,14 +59,8 @@ always @(posedge ref_clk)
   begin
     ready <= 0;
     out   <= 0;
-    if(in==0)
-    begin // triggered on noise, reset
-      state <= 0;
-    end
-    else
-    begin // have start bit
-      state <= 2;
-    end
+    if(in==0) state <= 0; // triggered on noise, reset
+    else      state <= 2; // have start bit
   end
   else if(state==10) // check for stop bit
   begin
@@ -75,6 +69,7 @@ always @(posedge ref_clk)
     begin
       ready <= 0;
       out   <= 0;
+      err   <= 1;
     end
     else
     begin // have stop bit

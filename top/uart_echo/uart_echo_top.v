@@ -1,6 +1,5 @@
 module top(
-  input wire clk,   // 25 MHz
-  input wire reset,
+  input wire clk,   // 12 MHz
 
   output wire sertx,
   input wire  serrx,
@@ -9,16 +8,16 @@ module top(
 );
 
 reg send = 0;
-wire done, ready;
+wire done, busy, ready, rxerr;
 wire [7:0] din;
 reg  [7:0] dlatch;
 
-// 25000000/(115200*8) ~= 2**12/150  (0.6663 % error)
+// 12000000/(115200*8) ~= 2**10/78   (0.825 % error)
 uart #(
-  .Width(12),
-  .Incr(150)
+  .Width(10),
+  .Incr(78)
 )D(
-  .reset(reset),
+  .reset(0),
   .clk(clk),
 
   .rin(serrx),
@@ -29,17 +28,21 @@ uart #(
   .done(done),
 
   .dout(din),
+  .busy(busy),
+  .rxerr(rxerr),
   .ready(ready)
 );
 
-always @(posedge clk)
-  begin
-    led[0]   <= send;
-    led[1]   <= done;
-    led[2]   <= ready;
-    led[3]   <= reset;
-    led[4]   <= 0;
-  end
+always @(posedge send)
+  led[0] <= ~led[0]; // left
+always @(posedge done)
+  led[1] <= ~led[1]; // top
+always @(posedge ready)
+  led[2] <= ~led[2]; // right
+always @(posedge busy)
+  led[3] <= ~led[3]; // bottom
+always @(posedge rxerr)
+  led[4] <= ~led[4]; // center
 
 always @(posedge clk)
   if(!send & ready)
@@ -47,7 +50,7 @@ always @(posedge clk)
     dlatch <= din;
     send   <= 1;
   end
-  else if(send & done)
+  else if(done)
   begin
     send <= 0;
   end
