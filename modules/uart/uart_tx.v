@@ -1,5 +1,6 @@
 module uart_tx(
-  input wire       clk,  // bit clock
+  input wire       ref_clk,
+  input wire       bit_clk,
   input wire       send, // command to send
   input wire [0:7] in,
   output reg       done,
@@ -10,8 +11,11 @@ wire [0:9] frame = {1'b0, in, 1'b1};
 
 reg [3:0] cnt;
 
-always @(posedge clk)
-  if(!send)
+always @(posedge ref_clk)
+  if(!bit_clk)
+  begin
+  end
+  else if(!send)
   begin
     cnt  <= 0;
     out  <= frame[0];

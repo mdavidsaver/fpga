@@ -1,5 +1,6 @@
 module uart_rx(
-  input wire       clk,  // sample clock
+  input wire       ref_clk,
+  input wire       samp_clk,
   input wire       in,
   input wire       reset,
   output reg [0:7] out,
@@ -12,19 +13,26 @@ parameter Oversample = 3;
 reg [Oversample:0] phase_cnt = 0;
 
 // Start the phase counter on the rising edge of the start bit
-always @(posedge clk)
-  if(reset || state==0)
-    phase_cnt <= 0;
-  else
-    phase_cnt <= phase_cnt[Oversample-1:0]+1;
+always @(posedge ref_clk)
+  if(samp_clk)
+  begin
+    if(reset || state==0)
+      phase_cnt <= 0;
+    else
+      phase_cnt <= phase_cnt[Oversample-1:0]+1;
+  end
 
 // samples 90 deg. after rising edge
 assign bit_clk = phase_cnt==(2**Oversample)/2-1; //{1'b0, {Oversample-1{1'b1}}};
 
 reg [3:0] state = 0;
 
-always @(posedge clk)
-  if(reset)
+always @(posedge ref_clk)
+  if(!samp_clk)
+  begin
+    // no op
+  end 
+  else if(reset)
   begin
     ready <= 0;
     out   <= 0;

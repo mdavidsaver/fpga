@@ -23,7 +23,8 @@ wire done, dcon1, dcon2, ready;
 wire [7:0] dout;
 
 uart_tx TX(
-  .clk(clk8),
+  .ref_clk(clk8),
+  .bit_clk(clk8),
   .send(send),
   .in(in),
   .done(done),
@@ -38,7 +39,8 @@ uart_rx_filter RXF(
 );
 
 uart_rx RX(
-  .clk(clk),
+  .ref_clk(clk),
+  .samp_clk(clk),
   .reset(reset),
   .in(dcon2),
   .ready(ready),

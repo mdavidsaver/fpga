@@ -13,7 +13,8 @@ reg [7:0] in = 0, dout;
 wire done, out;
 
 uart_tx D(
-  .clk(clk),
+  .ref_clk(clk),
+  .bit_clk(clk),
   .send(send),
   .in(in),
   .done(done),

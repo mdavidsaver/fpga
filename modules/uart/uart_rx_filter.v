@@ -1,7 +1,7 @@
 module uart_rx_filter(
   input wire clk,
-  input wire in,
   input wire samp_clk,
+  input wire in,
   output reg out
 );
 

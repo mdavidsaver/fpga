@@ -21,7 +21,8 @@ wire ready;
 wire [7:0] data;
 
 uart_rx D(
-  .clk(clk),
+  .ref_clk(clk),
+  .samp_clk(clk),
   .reset(reset),
   .in(din),
   .ready(ready),
