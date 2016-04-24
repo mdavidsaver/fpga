@@ -1,7 +1,7 @@
 module uart_rx_filter(
-  input wire samp_clk,
+  input wire clk,
   input wire in,
-  input wire bit_clk,
+  input wire samp_clk,
   output reg out
 );
 
@@ -10,8 +10,8 @@ wire in_sync = sync[0];
 
 reg [1:0] cnt = 0; // counting deadband filter to de-bounce
 
-always @(posedge samp_clk)
-  if(bit_clk)
+always @(posedge clk)
+  if(samp_clk)
   begin
     sync <= {in, sync[1]};
 

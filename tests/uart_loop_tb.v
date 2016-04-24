@@ -8,12 +8,14 @@ module test;
 
 `TEST_TIMEOUT(2000)
 
-reg [2:0] clk8_cnt = 0;
+reg clk8_enable = 1;
+reg [3:0] clk8_cnt = 0;
 
 always @(posedge clk)
-  clk8_cnt <= clk8_cnt+1;
+  if(clk8_enable)
+    clk8_cnt <= clk8_cnt[2:0]+1;
 
-wire clk8 = clk8_cnt[2];
+wire clk8 = clk8_cnt[3];
 
 reg send = 0, reset = 1;
 reg [7:0] in = 0;
@@ -29,14 +31,14 @@ uart_tx TX(
 );
 
 uart_rx_filter RXF(
-  .bit_clk(clk8),
+  .clk(clk),
   .samp_clk(clk),
   .in(dcon1),
   .out(dcon2)
 );
 
 uart_rx RX(
-  .clk(clk8),
+  .clk(clk),
   .reset(reset),
   .in(dcon2),
   .ready(ready),
@@ -75,6 +77,9 @@ begin
 
   uart_txrx(8'b10101001);
   uart_txrx(8'b10011001);
+  clk8_enable = 0;
+  #101
+  clk8_enable = 1;
   uart_txrx(8'b10110001);
   uart_txrx(8'b11101010);
   
