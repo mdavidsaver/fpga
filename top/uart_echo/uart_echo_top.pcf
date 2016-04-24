@@ -1,0 +1,11 @@
+set_io clk 21
+set_io reset 20
+
+set_io led[0] 99
+set_io led[1] 98
+set_io led[2] 97
+set_io led[3] 96
+set_io led[4] 95
+
+set_io sertx 8
+set_io serrx 9

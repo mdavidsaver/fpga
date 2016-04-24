@@ -57,6 +57,91 @@ function(add_itest target)
   )
 endfunction()
 
+find_program(YOSYS_EXECUTABLE yosys
+  HINTS YOSYS_PREFIX ENV YOSYS_PREFIX
+  PATH_SUFFIXES bin
+)
+
+find_program(ARACHNE_EXECUTABLE arachne-pnr
+  HINTS ARACHNE_PREFIX ENV ARACHNE_PREFIX
+  PATH_SUFFIXES bin
+)
+
+find_program(ICEPACK_EXECUTABLE icepack
+  HINTS ICESTORM_PREFIX ENV ICESTORM_PREFIX
+  PATH_SUFFIXES bin
+)
+
+find_program(ICEPROG_EXECUTABLE iceprog
+  HINTS ICESTORM_PREFIX ENV ICESTORM_PREFIX
+  PATH_SUFFIXES bin
+)
+
+message(STATUS "YOSYS ${YOSYS_EXECUTABLE}")
+message(STATUS "ARACHNE ${ARACHNE_EXECUTABLE}")
+message(STATUS "ICEPACK ${ICEPACK_EXECUTABLE}")
+message(STATUS "ICEPROG ${ICEPROG_EXECUTABLE}")
+
+if(YOSYS_EXECUTABLE AND ARACHNE_EXECUTABLE AND ICEPACK_EXECUTABLE)
+  set(CAN_SYNTH 1)
+endif()
+
+function(add_synth target)
+  cmake_parse_arguments(A "" "PCF" "SRCS;ARGS;DEPENDS" ${ARGN})
+
+  expand_source(B_SRCS ${A_SRCS})
+  expand_source(B_PCF ${A_PCF})
+
+  add_custom_command(
+    COMMENT "Test Compile ${target}.vvp"
+    OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/${target}.vvp
+    DEPENDS ${IVERILOG_EXECUTABLE} ${A_SRCS} ${A_DEPENDS}
+    COMMAND ${IVERILOG_EXECUTABLE} -o ${CMAKE_CURRENT_BINARY_DIR}/${target}.vvp -DSIM "-DVCD=\"\\\"${target}.vcd\\\"\"" -g2001 -Wall ${A_ARGS} ${B_SRCS}
+  )
+
+  add_custom_command(
+    COMMENT "synth ${target}.blif"
+    OUTPUT ${target}.blif
+    DEPENDS ${YOSYS_EXECUTABLE} ${A_SRCS} ${A_DEPENDS}
+            ${CMAKE_CURRENT_BINARY_DIR}/${target}.vvp
+    COMMAND ${YOSYS_EXECUTABLE} -p "synth_ice40 -blif ${CMAKE_CURRENT_BINARY_DIR}/${target}.blif" ${B_SRCS}
+  )
+
+  add_custom_command(
+    COMMENT "place and route ${target}.blif.txt"
+    OUTPUT ${target}.blif.txt
+    DEPENDS ${target}.blif ${A_PCF}
+    COMMAND ${ARACHNE_EXECUTABLE}
+       -d 1k -p ${B_PCF}
+       -o ${CMAKE_CURRENT_BINARY_DIR}/${target}.blif.txt
+       -V ${CMAKE_CURRENT_BINARY_DIR}/${target}.out.v
+       ${CMAKE_CURRENT_BINARY_DIR}/${target}.blif
+  )
+
+  add_custom_command(
+    COMMENT "Create ${target}.bin"
+    OUTPUT ${target}.bin
+    DEPENDS ${target}.blif.txt
+    COMMAND ${ICEPACK_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/${target}.blif.txt ${CMAKE_CURRENT_BINARY_DIR}/${target}.bin
+  )
+
+  add_custom_target(${target} ALL
+    DEPENDS
+      ${target}.bin
+  )
+
+  add_custom_target(load-${target}
+    DEPENDS ${ICEPROG_EXECUTABLE} ${target}
+    COMMAND ${ICEPROG_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/${target}.bin
+  )
+endfunction()
+
 enable_testing()
 
 add_subdirectory(tests)
+if(CAN_SYNTH)
+  message(STATUS "Do synth")
+  add_subdirectory(top/uart_echo)
+else()
+  message(STATUS "Skip synth")
+endif()
