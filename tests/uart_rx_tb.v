@@ -2,11 +2,17 @@ module test;
 
 `include "utest.vlib"
 
-`TEST_PRELUDE(0)
+`TEST_PRELUDE(9)
 
 `TEST_CLOCK(clk,1);
 
-`TEST_TIMEOUT(200)
+`TEST_TIMEOUT(2000)
+
+reg [3:0] clk8_cnt = 0;
+always @(posedge clk)
+  clk8_cnt <= clk8_cnt[2:0]+1;
+
+wire clk8 = clk8_cnt[3];
 
 reg din, reset=1;
 reg [7:0] expect;
@@ -22,7 +28,7 @@ uart_rx D(
   .out(data)
 );
 
-`define TICK @(posedge clk); @(negedge clk);
+`define TICK @(posedge clk8); @(negedge clk8);
 
 `define CHECK(MSG,R,D) `DIAG(MSG) `ASSERT_EQUAL(R,ready) `ASSERT_EQUAL(D,data[0])
 
@@ -30,28 +36,28 @@ task uart_recv;
   input [7:0] val;
   begin
     `DIAG("uart_recv")
+    @(negedge clk8);
     expect = val;
     din = 1;
-    @(negedge clk);
+    @(negedge clk8);
     din = val[0];
-    @(negedge clk);
+    @(negedge clk8);
     din = val[1];
-    @(negedge clk);
+    @(negedge clk8);
     din = val[2];
-    @(negedge clk);
+    @(negedge clk8);
     din = val[3];
-    @(negedge clk);
+    @(negedge clk8);
     din = val[4];
-    @(negedge clk);
+    @(negedge clk8);
     din = val[5];
-    @(negedge clk);
+    @(negedge clk8);
     din = val[6];
-    @(negedge clk);
+    @(negedge clk8);
     din = val[7];
-    @(negedge clk);
+    @(negedge clk8);
     din = 0;
-    @(negedge clk);
-    `ASSERT_EQUAL(1, ready)
+    @(posedge ready);
     `ASSERT_EQUAL(expect, data)
   end
 endtask
