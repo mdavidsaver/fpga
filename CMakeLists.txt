@@ -98,7 +98,7 @@ if(YOSYS_EXECUTABLE AND ARACHNE_EXECUTABLE AND ICEPACK_EXECUTABLE)
 endif()
 
 function(add_synth target)
-  cmake_parse_arguments(A "" "DEVICE;PCF" "SRCS;ARGS;DEPENDS" ${ARGN})
+  cmake_parse_arguments(A "" "DEVICE;PCF;MAXCLOCK" "SRCS;ARGS;DEPENDS" ${ARGN})
 
   if(NOT A_DEVICE)
     set(A_DEVICE hx1k) # default to icestick
@@ -168,6 +168,12 @@ function(add_synth target)
       DEPENDS
         ${target}-time.txt
     )
+
+    if(A_MAXCLOCK)
+      add_test(NAME time_${target}_max_clock
+        COMMAND ${PERL_EXECUTABLE} ${CMAKE_SOURCE_DIR}/util/timeit.pl ${CMAKE_CURRENT_BINARY_DIR}/${target}-time.txt ${A_MAXCLOCK}
+      )
+    endif()
   endif()
 
   add_custom_target(load-${target}
