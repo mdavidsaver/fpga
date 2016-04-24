@@ -58,7 +58,7 @@ endfunction()
 function(add_itest target)
 
   add_test(NAME ${target}
-    COMMAND ${PERL_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tapit.pl "${VVP_EXECUTABLE} -M. -n -l${target}.tap ${target}.vvp"
+    COMMAND ${PERL_EXECUTABLE} ${CMAKE_SOURCE_DIR}/util/tapit.pl "${VVP_EXECUTABLE} -M. -n -l${target}.tap ${target}.vvp"
   )
 endfunction()
 
