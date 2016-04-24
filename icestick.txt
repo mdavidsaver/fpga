@@ -1,0 +1,73 @@
+ICEstick eval board
+
+Summary of eval kit guide (EB82_01.0 Aug. 2013)
+
+iCE40HX1K FPGA tq144 package
+
+Connector pinouts
+
+connector pin, signal, tq144 pin
+
+J1 - expansion
+1, 3.3v
+2, 0v
+3, PIO0_02, 112
+4, PIO0_03, 113
+5, PIO0_04, 114
+6, PIO0_05, 115
+7, PIO0_06, 116
+8, PIO0_07, 117
+9, PIO0_08, 118
+10,PIO0_09, 119
+
+J2
+1, PIO1_02, 78
+2, PIO1_03, 79
+3, PIO1_04, 80
+4, PIO1_05, 81
+5, 0v
+6, 3.3v
+7, PIO1_06, 87
+8, PIO1_07, 88
+9, PIO1_08, 90
+10,PIO1_09, 91
+11,0v
+12,3.3v
+
+J3 - expansion
+1, 3.3v
+2, 0v
+3, PIO2_17, 62
+3, PIO2_16, 61
+3, PIO2_15, 60
+3, PIO2_14, 56
+3, PIO2_13, 48
+3, PIO2_12, 47
+3, PIO2_11, 45
+10,PIO2_10, 44
+
+Soldered periphrials
+
+UART (to FTDI)
+RX, PIO3_08, 9
+TX, PIO3_07, 8
+RTS, PIO3_06, 7
+CTS, PIO3_05, 4
+DTR, PIO3_04, 3
+DTS, PIO3_03, 2
+DCD, PIO3_02, 1
+
+LEDs  (hold w/ usb connector down)
+0, PIO1_14, 99 (left)
+1, PIO1_13, 98 (top)
+2, PIO1_12, 97 (right)
+3, PIO1_11, 96 (bottom)
+4, PIO1_10, 95 (center, green)
+
+IR (TFDU4101-TR3)
+3/TXD, PIO1_18, 105
+4/RXD, PIO1_19, 106
+5/SD,  PIO1_20, 107
+
+Clock (12 MHz)
+_,GBIN6/PIO03_00/DP08A, 21
