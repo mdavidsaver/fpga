@@ -77,17 +77,40 @@ find_program(ICEPROG_EXECUTABLE iceprog
   PATH_SUFFIXES bin
 )
 
+find_program(ICETIME_EXECUTABLE icetime
+  HINTS ICESTORM_PREFIX ENV ICESTORM_PREFIX
+  PATH_SUFFIXES bin
+)
+
 message(STATUS "YOSYS ${YOSYS_EXECUTABLE}")
 message(STATUS "ARACHNE ${ARACHNE_EXECUTABLE}")
 message(STATUS "ICEPACK ${ICEPACK_EXECUTABLE}")
 message(STATUS "ICEPROG ${ICEPROG_EXECUTABLE}")
+message(STATUS "ICETIME ${ICETIME_EXECUTABLE}")
 
 if(YOSYS_EXECUTABLE AND ARACHNE_EXECUTABLE AND ICEPACK_EXECUTABLE)
   set(CAN_SYNTH 1)
+  message(STATUS "Can synth")
+  if(ICETIME_EXECUTABLE)
+    set(CAN_TIME 1)
+  message(STATUS "Can time")
+  endif()
 endif()
 
 function(add_synth target)
-  cmake_parse_arguments(A "" "PCF" "SRCS;ARGS;DEPENDS" ${ARGN})
+  cmake_parse_arguments(A "" "DEVICE;PCF" "SRCS;ARGS;DEPENDS" ${ARGN})
+
+  if(NOT A_DEVICE)
+    set(A_DEVICE hx1k) # default to icestick
+  endif()
+
+  if(A_DEVICE MATCHES "(lp|hx)(1k|8k)")
+    set(PNR_NAME ${CMAKE_MATCH_2})
+    set(TIME_NAME ${A_DEVICE})
+  else()
+    message(SEND_ERROR "Unknown device ${A_DEVICE}")
+    return()
+  endif()
 
   expand_source(B_SRCS ${A_SRCS})
   expand_source(B_PCF ${A_PCF})
@@ -112,7 +135,7 @@ function(add_synth target)
     OUTPUT ${target}.blif.txt
     DEPENDS ${target}.blif ${A_PCF}
     COMMAND ${ARACHNE_EXECUTABLE}
-       -d 1k -p ${B_PCF}
+       -d ${PNR_NAME} -p ${B_PCF}
        -o ${CMAKE_CURRENT_BINARY_DIR}/${target}.blif.txt
        -V ${CMAKE_CURRENT_BINARY_DIR}/${target}.out.v
        ${CMAKE_CURRENT_BINARY_DIR}/${target}.blif
@@ -129,6 +152,23 @@ function(add_synth target)
     DEPENDS
       ${target}.bin
   )
+
+  if(CAN_TIME)
+    add_custom_command(
+      COMMENT "Report timeing ${target}-time.txt"
+      OUTPUT ${target}-time.txt
+      DEPENDS ${ICETIME_EXECUTABLE} ${target}.blif.txt
+      COMMAND ${ICETIME_EXECUTABLE}
+        -t -d ${TIME_NAME}
+        -r ${CMAKE_CURRENT_BINARY_DIR}/${target}-time.txt
+        ${CMAKE_CURRENT_BINARY_DIR}/${target}.blif.txt
+    )
+
+    add_custom_target(time-${target} ALL
+      DEPENDS
+        ${target}-time.txt
+    )
+  endif()
 
   add_custom_target(load-${target}
     DEPENDS ${ICEPROG_EXECUTABLE} ${target}
