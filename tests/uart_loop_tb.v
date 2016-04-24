@@ -6,7 +6,7 @@ module test;
 
 `TEST_CLOCK(clk,1);
 
-`TEST_TIMEOUT(2000)
+`TEST_TIMEOUT(10000)
 
 reg clk8_enable = 1;
 reg [3:0] clk8_cnt = 0;
@@ -19,32 +19,25 @@ wire clk8 = clk8_cnt[3];
 
 reg send = 0, reset = 1;
 reg [7:0] in = 0;
-wire done, dcon1, dcon2, ready;
+wire done, dloop, ready;
 wire [7:0] dout;
 
-uart_tx TX(
-  .ref_clk(clk8),
-  .bit_clk(clk8),
-  .send(send),
-  .in(in),
-  .done(done),
-  .out(dcon1)
-);
-
-uart_rx_filter RXF(
-  .clk(clk),
-  .samp_clk(clk),
-  .in(dcon1),
-  .out(dcon2)
-);
-
-uart_rx RX(
-  .ref_clk(clk),
-  .samp_clk(clk),
+uart #(
+  .Width(2),
+  .Incr(1)
+)D(
   .reset(reset),
-  .in(dcon2),
-  .ready(ready),
-  .out(dout)
+  .clk(clk),
+
+  .rin(dloop),
+  .rout(dloop),
+
+  .din(in),
+  .send(send),
+  .done(done),
+
+  .dout(dout),
+  .ready(ready)
 );
 
 `define TICK @(posedge clk8); @(negedge clk8);

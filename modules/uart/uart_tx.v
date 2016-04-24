@@ -12,15 +12,13 @@ wire [0:9] frame = {1'b0, in, 1'b1};
 reg [3:0] cnt;
 
 always @(posedge ref_clk)
-  if(!bit_clk)
-  begin
-  end
-  else if(!send)
+  if(!send)
   begin
     cnt  <= 0;
     out  <= frame[0];
     done <= 0;
   end
+  else if(!bit_clk) begin end
   else if(cnt==0)
   begin
     cnt  <= 9;
