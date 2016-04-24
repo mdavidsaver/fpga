@@ -1,0 +1,11 @@
+dist: trusty
+addons:
+  apt:
+    packages:
+      - cmake
+      - iverilog
+install:
+  - mkdir build
+  - (cd build && cmake ..)
+  - make -C build -j2 VERBOSE=1
+script: (cd build && ctest --output-on-failure)

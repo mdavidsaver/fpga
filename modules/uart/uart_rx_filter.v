@@ -15,9 +15,9 @@ always @(posedge clk)
   begin
     sync <= {in, sync[1]};
 
-    if(in_sync==1 && cnt!=2'b11)
+    if(in_sync==1 & cnt!=2'b11)
       cnt <= cnt+1;
-    else if(in_sync==0 && cnt!=2'b00)
+    else if(in_sync==0 & cnt!=2'b00)
       cnt <= cnt-1;
     else
       cnt <= cnt;
