@@ -47,6 +47,21 @@ add_isim(test_uart_loop
 )
 add_itest(test_uart_loop)
 
+add_isim(test_uart_echo
+  SRCS
+    ${CMAKE_CURRENT_SOURCE_DIR}/uart_echo_tb.v
+    ${CMAKE_CURRENT_SOURCE_DIR}/../modules/uart/uart.v
+    ${CMAKE_CURRENT_SOURCE_DIR}/../modules/uart/uart_tx.v
+    ${CMAKE_CURRENT_SOURCE_DIR}/../modules/uart/uart_rx.v
+    ${CMAKE_CURRENT_SOURCE_DIR}/../modules/uart/uart_rx_filter.v
+    ${CMAKE_CURRENT_SOURCE_DIR}/../util/frac_div.v
+  ARGS
+    -I${CMAKE_CURRENT_SOURCE_DIR}/..
+  DEPENDS
+    ${CMAKE_CURRENT_SOURCE_DIR}/../utest.vlib
+)
+add_itest(test_uart_echo)
+
 add_isim(test_frac_div
   SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/frac_div_tb.v

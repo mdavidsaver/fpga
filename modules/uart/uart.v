@@ -11,14 +11,15 @@ module uart(
 
   output wire       ready,// pulsed when new data received
   output wire [0:7] dout,  // RX data
-  output wire       bit_clk  // reconstructed RX sampling clock (debug)
+
+  output wire       samp_clk, // oversampled baud rate clock (debug)
+  output wire       tx_bit_clk,  // TX bit clock (debug)
+  output wire       rx_bit_clk  // reconstructed RX bit clock (debug)
 );
 
 parameter Width = 3; // 2**3 = 8
 parameter Incr  = 1;
 parameter Oversample = 3; // 2**3 = 8
-
-wire samp_clk;
 
 // baud rate fractional divider
 frac_div #(
@@ -40,7 +41,7 @@ always @(posedge clk)
   else if(samp_clk)
     bit_clk_cnt <= bit_clk_cnt[Oversample-1:0]+1;
 
-wire tx_bit_clk = samp_clk & bit_clk_cnt[Oversample];
+assign tx_bit_clk = samp_clk & bit_clk_cnt[Oversample];
 wire tx_send = ~reset & send;
 
 uart_tx TX(
@@ -69,7 +70,8 @@ uart_rx RX(
   .reset(reset),
   .in(dcon),
   .ready(ready),
-  .out(dout)
+  .out(dout),
+  .bit_clk(rx_bit_clk)
 );
 
 endmodule
