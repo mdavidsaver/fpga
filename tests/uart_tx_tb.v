@@ -2,7 +2,7 @@ module test;
 
 `include "utest.vlib"
 
-`TEST_PRELUDE(85)
+`TEST_PRELUDE(87)
 
 `TEST_CLOCK(clk,1);
 
@@ -10,7 +10,7 @@ module test;
 
 reg send = 0;
 reg [7:0] in = 0, dout;
-wire done, out;
+wire done, done1, out;
 
 uart_tx D(
   .ref_clk(clk),
@@ -18,17 +18,14 @@ uart_tx D(
   .send(send),
   .in(in),
   .done(done),
+  .done1(done1),
   .out(out)
 );
 
 // shift register to capture output when active (!done)
 always @(negedge clk)
-  begin
-  if(done)
-    dout = {1'bx, dout[7:1]};
-  else
+  if(~done & ~done1)
     dout = {out, dout[7:1]};
-  end
 
 `define TICK @(posedge clk); @(negedge clk);
 
@@ -38,8 +35,7 @@ task uart_send;
   input [7:0] data;
   begin
     $display("uart_send expect %x", data);
-    `TICK
-    `CHECK("Start bit",0,1)
+    `CHECK("Start bit",done,1) // don't care about done
 
     `TICK
     `CHECK("Bit 0",0,data[0])
@@ -66,7 +62,7 @@ task uart_send;
     `CHECK("Bit 7",0,data[7])
 
     `TICK
-    `CHECK("Stop bit",1,0)
+    `CHECK("Stop bit",0,0)
 
     `DIAG("Actual")
     `ASSERT_EQUAL(data, dout)
@@ -90,25 +86,29 @@ begin
   `TICK
   `CHECK("Idle",0,0)
 
-  `DIAG("Start Sending")
+  `DIAG("Start Sending 1")
   send = 1;
 
+  `TICK
   uart_send(8'b10101001);
   send = 0;
 
   in = 8'b11001010;
 
   `TICK
-  `CHECK("Idle",0,0)
+  `CHECK("Idle",1,0)  // done
   `TICK
   `CHECK("Idle",0,0)
   `TICK
   `CHECK("Idle",0,0)
 
-  `DIAG("Start Sending")
+  `DIAG("Start Sending 2")
   send = 1;
+  `TICK
   uart_send(8'b11001010);
 
+  @(posedge done);
+  `TIME
   `DIAG("Start Sending w/o idle")
   in = 8'b11010010;
   uart_send(8'b11010010);  
@@ -116,6 +116,7 @@ begin
   `DIAG("Use handshaking")
   send = 0;
   `TICK
+  `CHECK("Idle",1,0)
   `TICK
 
   @(posedge clk);

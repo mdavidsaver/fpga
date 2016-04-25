@@ -4,6 +4,9 @@ module top(
   output wire sertx,
   input wire  serrx,
 
+  output wire sig1,
+  output wire sig2,
+  
   output reg [4:0] led
 );
 

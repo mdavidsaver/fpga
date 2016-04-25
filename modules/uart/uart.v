@@ -7,7 +7,8 @@ module uart(
 
   input wire [0:7]  din,   // data to TX
   input wire        send, // raise and hold for TX until done
-  output wire       done, // pulsed when send complete
+  output wire       done, // pulsed when send complete (after stop bit)
+  output wire       done1, // pulsed when send complete (after last data bit)
 
   output wire       busy, // RX in progress
   output wire       ready,// pulsed when new data received
@@ -52,6 +53,7 @@ uart_tx TX(
   .send(tx_send),
   .in(din),
   .done(done),
+  .done1(done1),
   .out(rout)
 );
 

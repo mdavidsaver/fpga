@@ -8,3 +8,6 @@ set_io led[4] 95
 
 set_io sertx 8
 set_io serrx 9
+
+set_io sig1 78
+set_io sig2 79

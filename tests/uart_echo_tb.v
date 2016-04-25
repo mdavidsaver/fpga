@@ -9,7 +9,7 @@ module test;
 `TEST_TIMEOUT(10000)
 
 reg send = 0, reset = 1, rin;
-wire done, rout, ready, tx_bit_clk, rx_bit_clk, samp_clk;
+wire done, done1, rout, ready, tx_bit_clk, rx_bit_clk, samp_clk;
 wire [7:0] drx;
 reg [7:0] dtx;
 reg [7:0] expect;
@@ -28,6 +28,7 @@ uart #(
   .din(dtx),
   .send(send),
   .done(done),
+  .done1(done1),
 
   .dout(drx),
   .ready(ready),
@@ -58,12 +59,8 @@ always @(posedge samp_clk)
 
 // shift register to capture output when active (!done)
 always @(negedge tx_bit_clk)
-  begin
-    if(done)
-      actual = {1'bx, actual[7:1]};
-    else
-      actual = {rout, actual[7:1]};
-  end
+  if(~done & ~done1)
+    actual = {rout, actual[7:1]};
 
 `define TICK @(posedge tx_bit_clk); @(negedge tx_bit_clk);
 `define CHECK(MSG, D,O) `DIAG(MSG) `ASSERT_EQUAL(done,D) `ASSERT_EQUAL(out,O)

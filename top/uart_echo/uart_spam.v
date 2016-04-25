@@ -6,8 +6,16 @@ module top(
   output wire sertx,
   input wire  serrx,
 
+  output wire sig1,
+  output wire sig2,
+  
   output reg [4:0] led
 );
+
+wire sertxi;
+assign sertx = ~sertxi;
+assign sig1 = sertx;
+assign sig2 = serrx;
 
 reg  send;
 wire done, tx_bit_clk;
@@ -25,7 +33,7 @@ uart_tx D(
   .ref_clk(clk),
   .bit_clk(tx_bit_clk),
 
-  .out(sertx),
+  .out(sertxi),
 
   .in(dout),
   .send(send),
