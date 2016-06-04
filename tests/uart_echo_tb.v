@@ -8,8 +8,8 @@ module test;
 
 `TEST_TIMEOUT(10000)
 
-reg send = 0, reset = 1, rin;
-wire done, done1, rout, ready, tx_bit_clk, rx_bit_clk, samp_clk;
+reg send = 0, reset = 1;
+wire txbusy, rline, ready, tx_bit_clk, rx_bit_clk, samp_clk;
 wire [7:0] drx;
 reg [7:0] dtx;
 reg [7:0] expect;
@@ -22,13 +22,12 @@ uart #(
   .reset(reset),
   .clk(clk),
 
-  .rin(rin),
-  .rout(rout),
+  .rin(rline),
+  .rout(rline),
 
   .din(dtx),
   .send(send),
-  .done(done),
-  .done1(done1),
+  .txbusy(txbusy),
 
   .dout(drx),
   .ready(ready),
@@ -38,60 +37,22 @@ uart #(
   .tx_bit_clk(tx_bit_clk)
 );
 
-// echo logic
-always @(posedge samp_clk)
-  if(reset)
-  begin
-    rin <= 0;
-    send <= 0;
-    dtx  <= 8'bx;
-  end
-  else if(ready)
-  begin
-    dtx  <= drx;
-    send <= 1;
-  end
-  else if(done)
-  begin
-    dtx  <= 8'bx;
-    send <= 0;
-  end
-
-// shift register to capture output when active (!done)
-always @(negedge tx_bit_clk)
-  if(~done & ~done1)
-    actual = {rout, actual[7:1]};
-
 `define TICK @(posedge tx_bit_clk); @(negedge tx_bit_clk);
 `define CHECK(MSG, D,O) `DIAG(MSG) `ASSERT_EQUAL(done,D) `ASSERT_EQUAL(out,O)
 
 task uart_txrx;
   input [7:0] val;
   begin
-    `DIAG("uart_txrx")
-    @(negedge tx_bit_clk);
-    expect = val;
-    rin = 1;
-    @(negedge tx_bit_clk);
-    rin = val[0];
-    @(negedge tx_bit_clk);
-    rin = val[1];
-    @(negedge tx_bit_clk);
-    rin = val[2];
-    @(negedge tx_bit_clk);
-    rin = val[3];
-    @(negedge tx_bit_clk);
-    rin = val[4];
-    @(negedge tx_bit_clk);
-    rin = val[5];
-    @(negedge tx_bit_clk);
-    rin = val[6];
-    @(negedge tx_bit_clk);
-    rin = val[7];
-    @(negedge tx_bit_clk);
-    rin = 0;
-    @(posedge done);
-    `ASSERT_EQUAL(expect, actual)
+    $display("uart_txrx %x", val);
+
+    dtx  <= val;
+    send <= 1;
+    @(posedge txbusy);
+    dtx  <= 8'hxx;
+    send <= 0;
+
+    @(posedge ready);
+    `ASSERT_EQUAL(val, drx)
   end
 endtask
 
@@ -103,7 +64,7 @@ begin
   reset = 0;
   `TICK
   `TICK
-  `ASSERT_EQUAL(0, done)
+  `ASSERT_EQUAL(0, txbusy)
   `ASSERT_EQUAL(0, ready)
 
   uart_txrx(8'b10101001);

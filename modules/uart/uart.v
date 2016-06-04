@@ -6,11 +6,10 @@ module uart(
   output wire       rout,  // rs232 data out
 
   input wire [0:7]  din,   // data to TX
-  input wire        send, // raise and hold for TX until done
-  output wire       done, // pulsed when send complete (after stop bit)
-  output wire       done1, // pulsed when send complete (after last data bit)
+  input wire        send,
+  output wire       txbusy,
 
-  output wire       busy, // RX in progress
+  output wire       rxbusy, // RX in progress
   output wire       ready,// pulsed when new data received
   output wire       rxerr,// RX bad frame
   output wire [0:7] dout,  // RX data
@@ -52,8 +51,7 @@ uart_tx TX(
   .bit_clk(tx_bit_clk),
   .send(tx_send),
   .in(din),
-  .done(done),
-  .done1(done1),
+  .busy(txbusy),
   .out(rout)
 );
 
@@ -73,7 +71,7 @@ uart_rx RX(
   .samp_clk(samp_clk),
   .reset(reset),
   .in(dcon),
-  .busy(busy),
+  .busy(rxbusy),
   .ready(ready),
   .out(dout),
   .err(rxerr),

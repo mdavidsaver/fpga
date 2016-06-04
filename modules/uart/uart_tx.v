@@ -1,40 +1,87 @@
+/* RS232 transmitter
+
+ protocol
+ 1. Assert 'in' and set 'send' to 1.
+ 2. Wait for 'busy'==1, may deassert 'send'
+ 3. Wait for 'busy'==0, complete
+*/
 module uart_tx(
   input wire       ref_clk,
   input wire       bit_clk,
   input wire       send, // command to send
-  input wire [0:7] in,
-  output reg       done, // high at end of frame
-  output reg       done1,// high after last data bit send, stop bit not yet sent
+  input wire [7:0] in,
+  output           busy, // rising edge with 'send', falling edge after stop bit
   output reg       out
 );
 
-wire [0:9] frame = {1'b0, in, 1'b1};
-
-reg [3:0] cnt;
-
-always @(posedge ref_clk)
-  if(!send | bit_clk)
-    done <= done1;
+reg busy;
+reg [7:0] data;
+reg [3:0] state = 0;
 
 always @(posedge ref_clk)
-  if(!send)
-  begin
-    cnt  <= 0;
-    out  <= frame[0];
-    done1<= 0;
+  case(state)
+  0:begin // IDLE
+    busy  <= send;
+    data  <= in;
+    state <= send ? 1 : 0;
+    out   <= 0;
   end
-  else if(!bit_clk) begin end
-  else if(cnt==0)
-  begin
-    cnt  <= 9;
-    out  <= frame[9];
-    done1<= 0;
-  end
-  else
-  begin
-    cnt  <= cnt-1;
-    out  <= frame[cnt-1];
-    done1<= cnt==1;
-  end
+  1:if(bit_clk) // start bit
+    begin
+      out   <= 1;
+      state <= 2;
+    end
+  2:if(bit_clk) // data bit 0
+    begin
+      out   <= ~data[0];
+      state <= 3;
+    end
+  3:if(bit_clk) // data bit 1
+    begin
+      out   <= ~data[1];
+      state <= 4;
+    end
+  4:if(bit_clk) // data bit 2
+    begin
+      out   <= ~data[2];
+      state <= 5;
+    end
+  5:if(bit_clk) // data bit 3
+    begin
+      out   <= ~data[3];
+      state <= 6;
+    end
+  6:if(bit_clk) // data bit 4
+    begin
+      out   <= ~data[4];
+      state <= 7;
+    end
+  7:if(bit_clk) // data bit 5
+    begin
+      out   <= ~data[5];
+      state <= 8;
+    end
+  8:if(bit_clk) // data bit 6
+    begin
+      out   <= ~data[6];
+      state <= 9;
+    end
+  9:if(bit_clk) // data bit 7
+    begin
+      out   <= ~data[7];
+      state <= 10;
+    end
+  10:if(bit_clk) // Stop bit
+    begin
+      out   <= 0;
+      state <= 11;
+    end
+  11:if(bit_clk) // end of stop bit
+    begin
+      out   <= 0;
+      state <= 0; // return to idle (TODO: check 'send' here for fast start?)
+      busy  <= 0;
+    end
+  endcase
 
 endmodule

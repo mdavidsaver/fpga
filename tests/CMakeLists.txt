@@ -32,21 +32,6 @@ add_isim(test_uart_rx
 )
 add_itest(test_uart_rx)
 
-add_isim(test_uart_loop
-  SRCS
-    uart_loop_tb.v
-    ../modules/uart/uart.v
-    ../modules/uart/uart_tx.v
-    ../modules/uart/uart_rx.v
-    ../modules/uart/uart_rx_filter.v
-    ../util/frac_div.v
-  ARGS
-    -I${CMAKE_CURRENT_SOURCE_DIR}/../util
-  DEPENDS
-    ../util/utest.vlib
-)
-add_itest(test_uart_loop)
-
 add_isim(test_uart_echo
   SRCS
     uart_echo_tb.v

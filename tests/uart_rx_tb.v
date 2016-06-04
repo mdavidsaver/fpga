@@ -6,7 +6,7 @@ module test;
 
 `TEST_CLOCK(clk,1);
 
-`TEST_TIMEOUT(2000)
+`TEST_TIMEOUT(20000)
 
 reg [3:0] clk8_cnt = 0;
 always @(posedge clk)
@@ -17,15 +17,16 @@ wire clk8 = clk8_cnt[3];
 reg din, reset=1;
 reg [7:0] expect;
 
-wire ready;
+wire ready, bit_clk;
 wire [7:0] data;
 
 uart_rx D(
   .ref_clk(clk),
-  .samp_clk(clk),
+  .samp_clk(clk8),
   .reset(reset),
   .in(din),
   .ready(ready),
+  .bit_clk(bit_clk),
   .out(data)
 );
 
@@ -40,23 +41,23 @@ task uart_recv;
     @(negedge clk8);
     expect = val;
     din = 1;
-    @(negedge clk8);
-    din = val[0];
-    @(negedge clk8);
-    din = val[1];
-    @(negedge clk8);
-    din = val[2];
-    @(negedge clk8);
-    din = val[3];
-    @(negedge clk8);
-    din = val[4];
-    @(negedge clk8);
-    din = val[5];
-    @(negedge clk8);
-    din = val[6];
-    @(negedge clk8);
-    din = val[7];
-    @(negedge clk8);
+    @(negedge bit_clk);
+    din = ~val[0];
+    @(negedge bit_clk);
+    din = ~val[1];
+    @(negedge bit_clk);
+    din = ~val[2];
+    @(negedge bit_clk);
+    din = ~val[3];
+    @(negedge bit_clk);
+    din = ~val[4];
+    @(negedge bit_clk);
+    din = ~val[5];
+    @(negedge bit_clk);
+    din = ~val[6];
+    @(negedge bit_clk);
+    din = ~val[7];
+    @(negedge bit_clk);
     din = 0;
     @(posedge ready);
     `ASSERT_EQUAL(expect, data)

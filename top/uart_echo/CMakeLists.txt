@@ -20,11 +20,3 @@ add_synth(uart_spam
     ../../util/frac_div.v
 )
 
-add_synth(uart_spam2
-  PCF uart_echo_top.pcf
-  MAXCLOCK 12.0
-  SRCS
-    uart_spam2.v
-    ../../modules/uart/uart_tx.v
-    ../../util/frac_div.v
-)

@@ -34,7 +34,8 @@ assign busy = state!=0;
 always @(posedge ref_clk)
   if(!samp_clk)
   begin
-    // no op
+    ready <= 0;
+    err   <= 0;
   end 
   else if(reset)
   begin
@@ -79,8 +80,7 @@ always @(posedge ref_clk)
   end
   else
   begin // sample data bit
-    ready <= 0;
-    out   <= {in, out[0:6]};
+    out   <= {~in, out[0:6]};
     state <= state+1;
   end
 

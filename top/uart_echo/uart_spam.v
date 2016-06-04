@@ -18,7 +18,7 @@ assign sig1 = sertx;
 assign sig2 = serrx;
 
 reg  send;
-wire done, tx_bit_clk;
+wire busy, tx_bit_clk;
 reg  [7:0] dout = 97;
 
 frac_div #(
@@ -37,7 +37,7 @@ uart_tx D(
 
   .in(dout),
   .send(send),
-  .done(done)
+  .busy(busy)
 );
 
 parameter X = 16;
@@ -50,9 +50,6 @@ always @(posedge tx_bit_clk)
 
 wire slow = slow_cnt[X];
 
-always @(posedge slow)
-  led[4] <= ~led[4];
-
 reg [1:0] state = 0;
 
 always @(posedge clk)
@@ -60,10 +57,12 @@ always @(posedge clk)
   0:begin
     send  <= 1;
     state <= 1;
+    led[3] <= ~led[3];
   end
-  1:if(done)
+  1:if(busy)
     begin
       send     <= 0;
+    end else begin
       state    <= 2;
       slow_ena <= 1;
     end
@@ -71,8 +70,10 @@ always @(posedge clk)
     begin
       slow_ena <= 0;
       state    <= 0;
-      if(dout==122) dout <= 97;
+//      dout     <= 8'b01010101;
+      if(dout==122) dout <= 97;     // 'a' through 'z'
       else          dout <= dout+1;
+      led[4] <= ~led[4];
     end
   endcase
 
