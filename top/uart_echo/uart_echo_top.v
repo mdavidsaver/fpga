@@ -15,6 +15,7 @@ wire txbusy, rxbusy, ready, rxerr;
 wire [7:0] din;
 reg  [7:0] dlatch;
 
+wire sertxi, serrxi;
 assign sertx = ~sertxi;
 assign serrxi = ~serrx;
 assign sig1 = sertx;
