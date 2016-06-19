@@ -4,6 +4,7 @@ addons:
     packages:
       - cmake
       - iverilog
+language: c
 install:
   - mkdir build
   - (cd build && cmake ..)
