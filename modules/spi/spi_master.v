@@ -6,7 +6,7 @@ module spi_master(
   input  wire       miso,
 
   input  wire [7:0] din,
-  output wire [7:0] dout,
+  output reg  [7:0] dout,
   input  wire       start,
   output wire       busy
   
@@ -19,22 +19,19 @@ always @(posedge clk4)
   else
     phas <= 0;
 
-reg [7:0] dshift;
-assign dout = dshift;
-
 reg [3:0] cnt = 0;
 assign busy = cnt!=0;
 
 always @(posedge clk4)
   if(!busy && start) begin
-    dshift <= din;
+    dout <= din;
     cnt    <= 8;
   end else if(!busy) begin
     mclk <= 0;
 `ifdef SIM
-    dshift <= 8'hxx;
+    dout <= 8'hxx;
 `else
-    dshift <= 0;
+    dout <= 0;
 `endif
   end
 
@@ -42,9 +39,9 @@ always @(posedge clk4)
   if(busy) begin
     // CPOL=0, CPHA=1
     case(phas)
-    0: mosi   <= dshift[7];
+    0: mosi   <= dout[7];
     1: mclk   <= 1;
-    2: dshift <= {dshift[6:0], miso};
+    2: dout <= {dout[6:0], miso};
     3:begin
        mclk   <= 0;
        cnt    <= cnt-1;
