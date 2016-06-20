@@ -18,7 +18,7 @@ reg [7:0] din;
 reg [7:0] dshift;
 
 spi_master D(
-  .clk4(clk),
+  .clk2(clk),
 
   .cpol(cpol),
   .cpha(cpha),
