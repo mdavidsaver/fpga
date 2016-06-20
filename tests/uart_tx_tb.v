@@ -34,7 +34,7 @@ always @(posedge clk4)
 
 `define TICK @(posedge clk4);
 
-`define CHECK(MSG, B,O) `DIAG(MSG) `ASSERT_EQUAL(busy,B) `ASSERT_EQUAL(out,O)
+`define CHECK(MSG, B,O) `DIAG(MSG) `ASSERT_EQUAL(busy,B,"busy") `ASSERT_EQUAL(out,O,"out")
 
 task uart_send;
   input [7:0] data;
@@ -48,9 +48,9 @@ task uart_send;
     in   <= 8'hxx;
 
     @(negedge busy);
-    `ASSERT_EQUAL(cstart, 1)
-    `ASSERT_EQUAL(~cdata, data)
-    `ASSERT_EQUAL(cstop, 0)
+    `ASSERT_EQUAL(cstart, 1, "start bit")
+    `ASSERT_EQUAL(~cdata, data, "data bits")
+    `ASSERT_EQUAL(cstop, 0, "stop bit")
     $display("uart_send complete");
   end
 endtask

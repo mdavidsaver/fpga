@@ -14,12 +14,12 @@ initial
 begin
   `TEST_INIT(test)
   foo = 1;
-  `ASSERT_EQUAL(foo, 1)
+  `ASSERT_EQUAL(foo, 1, "foo == 1")
   `ASSERT(foo>0, "foo>0")
 
   #10
   foo = 0;
-  `ASSERT_EQUAL(foo, 0)
+  `ASSERT_EQUAL(foo, 0, "foo == 0")
   `ASSERT(foo==0, "foo==0")
 
   #5

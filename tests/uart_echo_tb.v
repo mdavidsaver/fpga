@@ -38,7 +38,7 @@ uart #(
 );
 
 `define TICK @(posedge tx_bit_clk); @(negedge tx_bit_clk);
-`define CHECK(MSG, D,O) `DIAG(MSG) `ASSERT_EQUAL(done,D) `ASSERT_EQUAL(out,O)
+`define CHECK(MSG, D,O) `DIAG(MSG) `ASSERT_EQUAL(done,D,"done") `ASSERT_EQUAL(out,O,"out")
 
 task uart_txrx;
   input [7:0] val;
@@ -52,7 +52,7 @@ task uart_txrx;
     send <= 0;
 
     @(posedge ready);
-    `ASSERT_EQUAL(val, drx)
+    `ASSERT_EQUAL(val, drx, "drx")
   end
 endtask
 
@@ -64,8 +64,8 @@ begin
   reset = 0;
   `TICK
   `TICK
-  `ASSERT_EQUAL(0, txbusy)
-  `ASSERT_EQUAL(0, ready)
+  `ASSERT_EQUAL(0, txbusy, "txbusy")
+  `ASSERT_EQUAL(0, ready, "ready")
 
   uart_txrx(8'b10101001);
   uart_txrx(8'b10011001);

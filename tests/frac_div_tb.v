@@ -2,7 +2,7 @@ module test;
 
 `include "utest.vlib"
 
-`TEST_PRELUDE(0)
+`TEST_PRELUDE(4)
 
 // 25 MHz has 40 nanosecond period
 `TEST_CLOCK(clk,20);
@@ -39,16 +39,16 @@ begin
   `TEST_INIT(test)
 
   @(posedge clk8);
-  `ASSERT_EQUAL($simtime, 40*8-20)
+  `ASSERT_EQUAL($simtime, 40*8-20, "clk8 tick")
 
   @(posedge clk8);
-  `ASSERT_EQUAL($simtime, 40*16-20)
+  `ASSERT_EQUAL($simtime, 40*16-20, "clk8 tick")
 
   @(posedge clkbaud);
-  `ASSERT_EQUAL($simtime, 8700) // desired 8681
+  `ASSERT_EQUAL($simtime, 8700, "clkbaud tick") // desired 8681
 
   @(posedge clkbaud);
-  `ASSERT_EQUAL($simtime, 17380) // desired 8681*2=17362
+  `ASSERT_EQUAL($simtime, 17380, "clkbaud tick") // desired 8681*2=17362
 
   @(posedge clk);
   @(posedge clk);

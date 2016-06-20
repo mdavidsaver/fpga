@@ -32,7 +32,7 @@ uart_rx D(
 
 `define TICK @(posedge clk8); @(negedge clk8);
 
-`define CHECK(MSG,R,D) `DIAG(MSG) `ASSERT_EQUAL(R,ready) `ASSERT_EQUAL(D,data[0])
+`define CHECK(MSG,R,D) `DIAG(MSG) `ASSERT_EQUAL(R,ready,"ready") `ASSERT_EQUAL(D,data[0],"data[0]")
 
 task uart_recv;
   input [7:0] val;
@@ -60,7 +60,7 @@ task uart_recv;
     @(negedge bit_clk);
     din = 0;
     @(posedge ready);
-    `ASSERT_EQUAL(expect, data)
+    `ASSERT_EQUAL(expect, data, "expect == data")
   end
 endtask
 

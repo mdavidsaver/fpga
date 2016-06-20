@@ -75,11 +75,11 @@ task spi_shift;
 
     miso   <= 1'bz;
 
-    `ASSERT_EQUAL(0, busy)
+    `ASSERT_EQUAL(0, busy, "busy")
 
-    `ASSERT_EQUAL(sval, dout)
+    `ASSERT_EQUAL(sval, dout, "to master from slave")
     
-    #2 `ASSERT_EQUAL(mval, dshift)
+    #2 `ASSERT_EQUAL(mval, dshift, "from master to slave")
   end
 endtask
 
