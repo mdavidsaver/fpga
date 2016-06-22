@@ -6,7 +6,9 @@ module test;
 
 `TEST_CLOCK(clk,1);
 
-`TEST_TIMEOUT(3000)
+`TEST_TIMEOUT(6000)
+
+localparam NBYTES = 1;
 
 reg [3:0] sendclk_cnt = 0;
 always @(posedge clk)
@@ -14,15 +16,15 @@ always @(posedge clk)
 wire sendclk = sendclk_cnt[3];
 
 reg select = 0, cpol = 0, cpha = 0;
-reg [7:0] din;
-wire [7:0] dout;
-reg [7:0] dshift;
+reg [(8*NBYTES-1):0] din;
+wire [(8*NBYTES-1):0] dout;
+reg [(8*NBYTES-1):0] dshift;
 wire start, done, busy;
 
 reg mclk = 0, mosi = 0;
 wire miso;
 
-spi_slave D(
+spi_slave #(.NBYTES(NBYTES)) D(
   .clk(clk),
 
   .cpol(cpol),
@@ -44,8 +46,8 @@ spi_slave D(
 integer i;
 
 task spi_shift;
-  input [7:0] mval;
-  input [7:0] sval;
+  input [(8*NBYTES-1):0] mval;
+  input [(8*NBYTES-1):0] sval;
   begin
     $display("spi_shift mval=%x sval=%x", mval, sval);
 
@@ -59,25 +61,25 @@ task spi_shift;
 
     @(posedge start);
     din    <= sval;
-    mosi   <= dshift[7];
+    mosi   <= dshift[(8*NBYTES-1)];
 
     @(negedge start);
-    din    <= 8'bxx;
+    din    <= {2*NBYTES{1'bx}};
 
-    for(i=0; i<8; i=i+1)
+    for(i=0; i<8*NBYTES; i=i+1)
     begin
       @(posedge sendclk);
       mclk <= ~cpol;
       if(cpha==0)
-        dshift <= {dshift[6:0], miso};
+        dshift <= {dshift[(8*NBYTES-2):0], miso};
       else
-        mosi   <= dshift[7];
+        mosi   <= dshift[(8*NBYTES-1)];
       @(posedge sendclk);
       mclk <= cpol;
       if(cpha==0)
-        mosi   <= dshift[7];
+        mosi   <= dshift[(8*NBYTES-1)];
       else
-        dshift <= {dshift[6:0], miso};
+        dshift <= {dshift[(8*NBYTES-2):0], miso};
     end
 
     @(posedge done);

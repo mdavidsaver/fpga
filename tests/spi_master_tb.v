@@ -6,18 +6,20 @@ module test;
 
 `TEST_CLOCK(clk,1);
 
-`TEST_TIMEOUT(2000)
+`TEST_TIMEOUT(4000)
+
+localparam NBYTES = 1;
 
 wire mclk, mosi;
 reg miso = 1'bz;
 
 wire busy;
 reg start, cpol = 0, cpha = 0;
-wire [7:0] dout;
-reg [7:0] din;
-reg [7:0] dshift;
+wire [(8*NBYTES-1):0] dout;
+reg [(8*NBYTES-1):0] din;
+reg [(8*NBYTES-1):0] dshift;
 
-spi_master D(
+spi_master #(.NBYTES(NBYTES)) D(
   .clk2(clk),
 
   .cpol(cpol),
@@ -36,8 +38,8 @@ spi_master D(
 integer i;
 
 task spi_shift;
-  input [7:0] mval;
-  input [7:0] sval;
+  input [(8*NBYTES-1):0] mval;
+  input [(8*NBYTES-1):0] sval;
   begin
     $display("spi_shift mval=%x sval=%x", mval, sval);
 
@@ -48,9 +50,9 @@ task spi_shift;
     @(posedge busy); // pretend this is slave select
     start  <= 0;
     din    <= 8'hxx;
-    miso   <= dshift[7];
+    miso   <= dshift[(8*NBYTES-1)];
 
-    for(i=0; i<8; i=i+1) begin
+    for(i=0; i<8*NBYTES; i=i+1) begin
       // phase 0
       if(cpol==0)
         @(posedge mclk);
@@ -58,9 +60,9 @@ task spi_shift;
         @(negedge mclk);
       // phase 1
       if(cpha==0)
-        dshift <= {dshift[6:0], mosi};
+        dshift <= {dshift[(8*NBYTES-2):0], mosi};
       else
-        miso   <= dshift[7];
+        miso   <= dshift[(8*NBYTES-1)];
       // phase 2
       if(cpol==0)
         @(negedge mclk);
@@ -68,9 +70,9 @@ task spi_shift;
         @(posedge mclk);
       // phase 3
       if(cpha==0)
-        miso   <= dshift[7];
+        miso   <= dshift[(8*NBYTES-1)];
       else
-        dshift <= {dshift[6:0], mosi};
+        dshift <= {dshift[(8*NBYTES-2):0], mosi};
     end
 
     miso   <= 1'bz;

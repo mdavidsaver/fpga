@@ -9,8 +9,8 @@ module spi_master(
   output reg        mosi,
   input  wire       miso,
 
-  input  wire [7:0] din,   // data to be sent by master
-  output reg  [7:0] dout,  // data received by master
+  input  wire [(8*NBYTES-1):0] din,   // data to be sent by master
+  output reg  [(8*NBYTES-1):0] dout,  // data received by master
   input  wire       start, // toggle high to start transfer
   output wire       busy   // high while transfer in progress
                            // rising edge when 'start' toggled,
@@ -18,28 +18,22 @@ module spi_master(
   
 );
 
-reg [4:0] cnt = 0;
+parameter NBYTES = 1;
+
+reg [(3+NBYTES):0] cnt = 0;
 assign busy = cnt!=0;
 
 wire phas=cnt[0];
-
-always @(posedge clk2)
-  if(start)
-    cnt <= 16;
-  else if(cnt==0)
-    cnt <= 0;
-  else
-    cnt <= cnt-1;
-
 
 always @(posedge clk2)
   if(!busy) begin
     mclk <= cpol;
     if(start) begin
       dout <= din; // latch data to send
-      cnt  <= 16;
-      mosi <= din[7];
+      cnt  <= 16*NBYTES;
+      mosi <= din[(8*NBYTES-1)];
     end else begin
+      cnt <= 0;
 `ifdef SIM
       mosi <= 1'bx;
 `else
@@ -47,10 +41,11 @@ always @(posedge clk2)
 `endif
     end
   end else begin
+    cnt <= cnt-1;
     mclk <= ~phas ^ cpol;
-    mosi <= dout[7];
+    mosi <= dout[(8*NBYTES-1)];
     if(phas==cpha) // sample
-       dout   <= {dout[6:0], miso};
+       dout   <= {dout[(8*NBYTES-2):0], miso};
   end
 
 

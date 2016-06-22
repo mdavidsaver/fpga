@@ -10,13 +10,15 @@ module spi_slave(
   input  wire       mosi,
   output reg        miso,
 
-  input  wire [7:0] din,   // data to be sent to master
-  output reg  [7:0] dout,  // data received from master
+  input  wire [(8*NBYTES-1):0] din,   // data to be sent to master
+  output reg  [(8*NBYTES-1):0] dout,  // data received from master
 
   output wire       busy,
   output wire       start, // pulsed when 'select' rises
   output reg        done   // pulsed after each byte
 );
+
+parameter NBYTES = 1;
 
 reg [3:0] select_x;
 always @(posedge clk)
@@ -40,12 +42,12 @@ reg mosi_x;
 always @(posedge clk)
   mosi_x <= mosi;
 
-reg [4:0] cnt = 0;
+reg [(3+NBYTES):0] cnt = 0;
 assign busy = cnt!=0 & select_x[0];
 
 always @(posedge clk)
   if(start) begin
-    cnt <= 16;
+    cnt <= 16*NBYTES;
     done<= 0;
     dout<= din; // latch data to send
   end else if(!busy) begin
@@ -58,14 +60,14 @@ always @(posedge clk)
 
 always @(posedge clk)
   if(start)
-    miso <= din[7];
+    miso <= din[(8*NBYTES-1)];
   else if(!busy)
     miso <= 1'bz;
   else if(setup)
-    miso <= dout[7];
+    miso <= dout[(8*NBYTES-1)];
 
 always @(posedge clk)
   if(busy & sample)
-    dout   <= {dout[6:0], mosi_x};
+    dout   <= {dout[(8*NBYTES-2):0], mosi_x};
 
 endmodule
