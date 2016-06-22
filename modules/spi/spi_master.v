@@ -6,7 +6,8 @@
  * 3. when busy falls the transfer is complete and 'dout' is stable.
  */
 module spi_master(
-  input  wire       clk2,  // 2x the SPI bus clock
+  input  wire       ref_clk,
+  input  wire       bit_clk2,  // 2x the SPI bus clock
 
   input  wire       cpol,  // clock polarity (idle level)
   input  wire       cpha,  // clock phase. 0 - sample on rising edge,
@@ -32,8 +33,9 @@ assign busy = cnt!=0;
 
 wire phas=cnt[0];
 
-always @(posedge clk2)
-  if(!busy) begin
+always @(posedge ref_clk)
+  if(~bit_clk2) begin
+  end else if(!busy) begin
     mclk <= cpol;
     if(start) begin
       dout <= din; // latch data to send

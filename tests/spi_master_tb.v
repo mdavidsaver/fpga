@@ -10,6 +10,12 @@ module test;
 
 localparam NBYTES = 1;
 
+reg [1:0] clk4_cnt = 0;
+reg clk4;
+
+always @(posedge clk)
+  {clk4, clk4_cnt} <= clk4_cnt+1;
+
 wire mclk, mosi;
 reg miso = 1'bz;
 
@@ -20,7 +26,8 @@ reg [(8*NBYTES-1):0] din;
 reg [(8*NBYTES-1):0] dshift;
 
 spi_master #(.NBYTES(NBYTES)) D(
-  .clk2(clk),
+  .ref_clk(clk),
+  .bit_clk2(clk4),
 
   .cpol(cpol),
   .cpha(cpha),
