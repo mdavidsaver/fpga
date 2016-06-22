@@ -1,3 +1,10 @@
+/* SPI bus master.
+ *
+ * Protocol.
+ * 1. set 'din' and drive 'start' high.
+ * 2. when busy rises then set 'start' low
+ * 3. when busy falls the transfer is complete and 'dout' is stable.
+ */
 module spi_master(
   input  wire       clk2,  // 2x the SPI bus clock
 

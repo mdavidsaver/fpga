@@ -1,3 +1,10 @@
+/* SPI busy slave
+ *
+ * Protocol
+ * 1. 'start' indicates that master has selected.  din should be stable.
+ * 2. 'done' indicates that a frame has been shifted.
+ *    din may be changed, and dout inspected.
+ */
 module spi_slave(
   input wire        clk,   // sample clock.  must be at least 2x mclk
 
