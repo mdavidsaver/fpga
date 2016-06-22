@@ -21,6 +21,17 @@ add_isim(test_spi_master
 )
 add_itest(test_spi_master)
 
+add_isim(test_spi_slave
+  SRCS
+    spi_slave_tb.v
+    ../modules/spi/spi_slave.v
+  ARGS
+    -I${CMAKE_CURRENT_SOURCE_DIR}/../util
+  DEPENDS
+    ../util/utest.vlib
+)
+add_itest(test_spi_slave)
+
 add_isim(test_uart_tx
   SRCS
     uart_tx_tb.v
