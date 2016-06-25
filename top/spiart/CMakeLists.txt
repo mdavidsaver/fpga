@@ -1,0 +1,10 @@
+add_isim(test_spiart_logic
+  SRCS
+    spiart_logic_tb.v
+    spiart_logic.v
+  ARGS
+    -I${CMAKE_CURRENT_SOURCE_DIR}/../../util
+  DEPENDS
+    ../../util/utest.vlib
+)
+add_itest(test_spiart_logic)
