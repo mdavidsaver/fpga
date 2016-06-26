@@ -1,0 +1,20 @@
+add_isim(test_utest
+  SRCS
+    utest_tb.v
+  ARGS
+    -I${CMAKE_CURRENT_SOURCE_DIR}
+  DEPENDS
+    utest.vlib
+)
+add_itest(test_utest)
+
+add_isim(test_frac_div
+  SRCS
+    frac_div_tb.v
+    frac_div.v
+  ARGS
+    -I${CMAKE_CURRENT_SOURCE_DIR}
+  DEPENDS
+    utest.vlib
+)
+add_itest(test_frac_div)

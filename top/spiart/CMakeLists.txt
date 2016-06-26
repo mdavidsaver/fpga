@@ -3,9 +3,9 @@ add_isim(test_spiart_logic
     spiart_logic_tb.v
     spiart_logic.v
   ARGS
-    -I${CMAKE_CURRENT_SOURCE_DIR}/../../util
+    -I${PROJECT_SOURCE_DIR}/util
   DEPENDS
-    ../../util/utest.vlib
+    ${PROJECT_SOURCE_DIR}/util/utest.vlib
 )
 add_itest(test_spiart_logic)
 
@@ -15,10 +15,10 @@ add_synth(spiart
   SRCS
     spiart_top.v
     spiart_logic.v
-    ../../modules/uart/uart.v
-    ../../modules/uart/uart_tx.v
-    ../../modules/uart/uart_rx.v
-    ../../modules/uart/uart_rx_filter.v
-    ../../util/frac_div.v
-    ../../modules/spi/spi_master.v
+    ${PROJECT_SOURCE_DIR}/modules/uart/uart.v
+    ${PROJECT_SOURCE_DIR}/modules/uart/uart_tx.v
+    ${PROJECT_SOURCE_DIR}/modules/uart/uart_rx.v
+    ${PROJECT_SOURCE_DIR}/modules/uart/uart_rx_filter.v
+    ${PROJECT_SOURCE_DIR}/util/frac_div.v
+    ${PROJECT_SOURCE_DIR}/modules/spi/spi_master.v
 )

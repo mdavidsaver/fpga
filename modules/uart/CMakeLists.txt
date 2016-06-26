@@ -1,0 +1,21 @@
+add_isim(test_uart_tx
+  SRCS
+    uart_tx_tb.v
+    ${PROJECT_SOURCE_DIR}/modules/uart/uart_tx.v
+  ARGS
+    -I${PROJECT_SOURCE_DIR}/util
+  DEPENDS
+    ${PROJECT_SOURCE_DIR}/util/utest.vlib
+)
+add_itest(test_uart_tx)
+
+add_isim(test_uart_rx
+  SRCS
+    uart_rx_tb.v
+    ${PROJECT_SOURCE_DIR}/modules/uart/uart_rx.v
+  ARGS
+    -I${PROJECT_SOURCE_DIR}/util
+  DEPENDS
+    ${PROJECT_SOURCE_DIR}/util/utest.vlib
+)
+add_itest(test_uart_rx)

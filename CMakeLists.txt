@@ -122,74 +122,78 @@ function(add_synth target)
     COMMAND ${IVERILOG_EXECUTABLE} -o ${CMAKE_CURRENT_BINARY_DIR}/${target}.vvp -DSIM "-DVCD=\"\\\"${target}.vcd\\\"\"" -g2001 -Wall ${A_ARGS} ${B_SRCS}
   )
 
-  add_custom_command(
-    COMMENT "synth ${target}.blif"
-    OUTPUT ${target}.blif
-    DEPENDS ${YOSYS_EXECUTABLE} ${A_SRCS} ${A_DEPENDS}
-            ${CMAKE_CURRENT_BINARY_DIR}/${target}.vvp
-    COMMAND ${YOSYS_EXECUTABLE} -p "synth_ice40 -blif ${CMAKE_CURRENT_BINARY_DIR}/${target}.blif" ${B_SRCS}
-  )
-
-  add_custom_command(
-    COMMENT "place and route ${target}.blif.txt"
-    OUTPUT ${target}.blif.txt
-    DEPENDS ${target}.blif ${A_PCF}
-    COMMAND ${ARACHNE_EXECUTABLE}
-       -d ${PNR_NAME} -p ${B_PCF}
-       -o ${CMAKE_CURRENT_BINARY_DIR}/${target}.blif.txt
-       -V ${CMAKE_CURRENT_BINARY_DIR}/${target}.out.v
-       ${CMAKE_CURRENT_BINARY_DIR}/${target}.blif
-  )
-
-  add_custom_command(
-    COMMENT "Create ${target}.bin"
-    OUTPUT ${target}.bin
-    DEPENDS ${target}.blif.txt
-    COMMAND ${ICEPACK_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/${target}.blif.txt ${CMAKE_CURRENT_BINARY_DIR}/${target}.bin
-  )
-
-  add_custom_target(${target} ALL
-    DEPENDS
-      ${target}.bin
-  )
-
-  if(CAN_TIME)
+  if(NOT CAN_SYNTH)
+    add_custom_target(${target} ALL
+        DEPENDS
+        ${target}.vvp
+    )
+  else()
     add_custom_command(
-      COMMENT "Report timeing ${target}-time.txt"
-      OUTPUT ${target}-time.txt
-      DEPENDS ${ICETIME_EXECUTABLE} ${target}.blif.txt
-      COMMAND ${ICETIME_EXECUTABLE}
-        -t -d ${TIME_NAME}
-        -r ${CMAKE_CURRENT_BINARY_DIR}/${target}-time.txt
-        ${CMAKE_CURRENT_BINARY_DIR}/${target}.blif.txt
+        COMMENT "synth ${target}.blif"
+        OUTPUT ${target}.blif
+        DEPENDS ${YOSYS_EXECUTABLE} ${A_SRCS} ${A_DEPENDS}
+                ${CMAKE_CURRENT_BINARY_DIR}/${target}.vvp
+        COMMAND ${YOSYS_EXECUTABLE} -p "synth_ice40 -blif ${CMAKE_CURRENT_BINARY_DIR}/${target}.blif" ${B_SRCS} > ${CMAKE_CURRENT_BINARY_DIR}/${target}.blif.out
     )
 
-    add_custom_target(time-${target} ALL
-      DEPENDS
-        ${target}-time.txt
+    add_custom_command(
+        COMMENT "place and route ${target}.blif.txt"
+        OUTPUT ${target}.blif.txt
+        DEPENDS ${target}.blif ${A_PCF}
+        COMMAND ${ARACHNE_EXECUTABLE}
+        -d ${PNR_NAME} -p ${B_PCF}
+        -o ${CMAKE_CURRENT_BINARY_DIR}/${target}.blif.txt
+        -V ${CMAKE_CURRENT_BINARY_DIR}/${target}.out.v
+        ${CMAKE_CURRENT_BINARY_DIR}/${target}.blif
     )
 
-    if(A_MAXCLOCK)
-      add_test(NAME time_${target}_max_clock
-        COMMAND ${PERL_EXECUTABLE} ${CMAKE_SOURCE_DIR}/util/timeit.pl ${CMAKE_CURRENT_BINARY_DIR}/${target}-time.txt ${A_MAXCLOCK}
-      )
-    endif()
-  endif()
+    add_custom_command(
+        COMMENT "Create ${target}.bin"
+        OUTPUT ${target}.bin
+        DEPENDS ${target}.blif.txt
+        COMMAND ${ICEPACK_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/${target}.blif.txt ${CMAKE_CURRENT_BINARY_DIR}/${target}.bin
+    )
 
-  add_custom_target(load-${target}
-    DEPENDS ${ICEPROG_EXECUTABLE} ${target}
-    COMMAND ${ICEPROG_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/${target}.bin
-  )
+    add_custom_target(${target} ALL
+        DEPENDS
+        ${target}.bin
+    )
+
+    add_custom_target(load-${target}
+      DEPENDS ${ICEPROG_EXECUTABLE} ${target}
+      COMMAND ${ICEPROG_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/${target}.bin
+    )
+
+    if(CAN_TIME)
+        add_custom_command(
+          COMMENT "Report timeing ${target}-time.txt"
+          OUTPUT ${target}-time.txt
+          DEPENDS ${ICETIME_EXECUTABLE} ${target}.blif.txt
+          COMMAND ${ICETIME_EXECUTABLE}
+              -t -d ${TIME_NAME}
+              -r ${CMAKE_CURRENT_BINARY_DIR}/${target}-time.txt
+              ${CMAKE_CURRENT_BINARY_DIR}/${target}.blif.txt
+        )
+
+        add_custom_target(time-${target} ALL
+          DEPENDS
+            ${target}-time.txt
+        )
+
+        if(A_MAXCLOCK)
+          add_test(NAME time_${target}_max_clock
+            COMMAND ${PERL_EXECUTABLE} ${CMAKE_SOURCE_DIR}/util/timeit.pl ${CMAKE_CURRENT_BINARY_DIR}/${target}-time.txt ${A_MAXCLOCK}
+          )
+        endif()
+    endif() # CAN_TIME
+  endif() # CAN_SYNTH
 endfunction()
 
 enable_testing()
 
-add_subdirectory(tests)
-if(CAN_SYNTH)
-  message(STATUS "Do synth")
-  add_subdirectory(top/uart_echo)
-  add_subdirectory(top/blink)
-  add_subdirectory(top/spiart)
-else()
-  message(STATUS "Skip synth")
-endif()
+add_subdirectory(util)
+add_subdirectory(modules/uart)
+add_subdirectory(modules/spi)
+add_subdirectory(top/uart_echo)
+add_subdirectory(top/blink)
+add_subdirectory(top/spiart)
