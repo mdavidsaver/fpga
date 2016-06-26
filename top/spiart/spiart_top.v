@@ -89,4 +89,13 @@ spiart_logic L(
   .spi_start(spi_start),
   .spi_busy(spi_busy)
 );
+
+always @(posedge clk)
+  begin
+    if(uart_rxerr)
+      led[0] <= ~led[0];
+    if(uart_ready)
+      led[1] <= ~led[1];
+  end
+
 endmodule
