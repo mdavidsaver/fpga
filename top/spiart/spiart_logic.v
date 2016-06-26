@@ -97,8 +97,8 @@ always @(posedge clk)
       end
       if(cmd_div_set) begin
           // SPI clock divider
-          divparam <= uart_rx;
-          reply    <= uart_rx;
+          divparam <= uart_rx>0 ? uart_rx : 1;
+          reply    <= uart_rx>0 ? uart_rx : 1;
       end
       if(cmd_div_get) begin
           // send back SPI clock divider
