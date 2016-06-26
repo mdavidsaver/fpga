@@ -1,3 +1,4 @@
 build/
 *.vpp
 *.vcd
+*.user

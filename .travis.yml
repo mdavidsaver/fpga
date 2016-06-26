@@ -4,6 +4,7 @@ addons:
     packages:
       - cmake
       - iverilog
+      - avr-libc
 language: c
 install:
   - mkdir build

@@ -189,6 +189,64 @@ function(add_synth target)
   endif() # CAN_SYNTH
 endfunction()
 
+find_program(AVRGCC_EXECUTABLE
+  NAMES avr-gcc
+  PATH_SUFFIXES bin
+  DOC "Location of AVR C cross-compiler"
+)
+find_program(AVROBJCOPY_EXECUTABLE
+  NAMES avr-objcopy
+  PATH_SUFFIXES bin
+  DOC "Location of AVR ELF file translator"
+)
+find_program(AVRSIZE_EXECUTABLE
+  NAMES avr-size
+  PATH_SUFFIXES bin
+  DOC "Location of AVR ELF file inspector"
+)
+find_program(AVRDUDE_EXECUTABLE
+  NAMES avrdude
+  PATH_SUFFIXES bin
+  DOC "Location of AVR programmer"
+)
+
+message(STATUS "AVRGCC_EXECUTABLE=${AVRGCC_EXECUTABLE}")
+message(STATUS "AVROBJCOPY_EXECUTABLE=${AVROBJCOPY_EXECUTABLE}")
+message(STATUS "AVRDUDE_EXECUTABLE=${AVRDUDE_EXECUTABLE}")
+
+if(AVRGCC_EXECUTABLE AND AVROBJCOPY_EXECUTABLE)
+  set(AVR_BSP "arduino-uno")
+  set(AVR_DIR ${CMAKE_CURRENT_BINARY_DIR}/${AVR_BSP})
+  message(STATUS "AVR ${AVR_BSP} in ${AVR_DIR}")
+  file(MAKE_DIRECTORY ${AVR_DIR})
+
+  configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/toolchains/arduino-uno.toolchain.in
+    ${AVR_DIR}/toolchain.cmake
+    @ONLY
+  )
+
+  execute_process(
+    COMMAND ${CMAKE_COMMAND}
+      -DCMAKE_TOOLCHAIN_FILE=toolchain.cmake
+      -DCMAKE_MODULE_PATH=${CMAKE_CURRENT_SOURCE_DIR}/cmake
+      ${CMAKE_CURRENT_SOURCE_DIR}/avr
+    WORKING_DIRECTORY ${AVR_DIR}
+    RESULT_VARIABLE AVR_OK
+  )
+
+  if(AVR_OK EQUAL 0)
+    message(STATUS "Build for AVR ${AVR_BSP}")
+    set(CAN_AVR 1)
+    if(CMAKE_MAKE_PROGRAM)
+      add_custom_target(all-${AVR_BSP} ALL
+        COMMAND ${CMAKE_MAKE_PROGRAM} all
+        WORKING_DIRECTORY ${AVR_DIR}
+      )
+    endif()
+  endif()
+endif()
+
 enable_testing()
 
 add_subdirectory(util)

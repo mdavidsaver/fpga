@@ -1,0 +1,13 @@
+set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS FALSE)
+
+set(CMAKE_EXECUTABLE_SUFFIX ".elf")
+
+set(CMAKE_C_FLAGS_INIT "-D${AVR_BSP} -DF_CPU=${AVR_FREQ} -mmcu=${AVR_MCU}")
+set(CMAKE_C_COMPILER_ARG1 "-mmcu=${AVR_MCU}")
+set(CMAKE_EXE_LINKER_FLAGS "-mmcu=${AVR_MCU}")
+
+message(STATUS "AVR platform MCU ${AVR_MCU}")
+
+if(NOT AVR_MCU)
+  message(SEND_ERROR "\${AVR_MCU} undefined")
+endif()
