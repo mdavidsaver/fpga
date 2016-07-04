@@ -101,12 +101,13 @@ function(add_synth target)
   cmake_parse_arguments(A "" "DEVICE;PCF;MAXCLOCK" "SRCS;ARGS;DEPENDS" ${ARGN})
 
   if(NOT A_DEVICE)
-    set(A_DEVICE hx1k) # default to icestick
+    set(A_DEVICE hx1k-tq144) # default to icestick
   endif()
 
-  if(A_DEVICE MATCHES "(lp|hx)(1k|8k)")
+  if(A_DEVICE MATCHES "(lp|hx)(1k|8k)-([a-z0-9]+)")
     set(PNR_NAME ${CMAKE_MATCH_2})
-    set(TIME_NAME ${A_DEVICE})
+    set(PKG_NAME ${CMAKE_MATCH_3})
+    set(TIME_NAME "${CMAKE_MATCH_1}${CMAKE_MATCH_2}")
   else()
     message(SEND_ERROR "Unknown device ${A_DEVICE}")
     return()
@@ -141,7 +142,7 @@ function(add_synth target)
         OUTPUT ${target}.blif.txt
         DEPENDS ${target}.blif ${A_PCF}
         COMMAND ${ARACHNE_EXECUTABLE}
-        -d ${PNR_NAME} -p ${B_PCF}
+        -d ${PNR_NAME} -P ${PKG_NAME} -p ${B_PCF}
         -o ${CMAKE_CURRENT_BINARY_DIR}/${target}.blif.txt
         -V ${CMAKE_CURRENT_BINARY_DIR}/${target}.out.v
         ${CMAKE_CURRENT_BINARY_DIR}/${target}.blif
@@ -170,7 +171,8 @@ function(add_synth target)
           OUTPUT ${target}-time.txt
           DEPENDS ${ICETIME_EXECUTABLE} ${target}.blif.txt
           COMMAND ${ICETIME_EXECUTABLE}
-              -t -d ${TIME_NAME}
+              -t -d ${TIME_NAME} -P ${PKG_NAME} -p ${B_PCF}
+              -c ${A_MAXCLOCK}
               -r ${CMAKE_CURRENT_BINARY_DIR}/${target}-time.txt
               ${CMAKE_CURRENT_BINARY_DIR}/${target}.blif.txt
         )
@@ -221,7 +223,7 @@ if(AVRGCC_EXECUTABLE AND AVROBJCOPY_EXECUTABLE)
   file(MAKE_DIRECTORY ${AVR_DIR})
 
   configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/toolchains/arduino-uno.toolchain.in
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/toolchains/${AVR_BSP}.toolchain.in
     ${AVR_DIR}/toolchain.cmake
     @ONLY
   )
