@@ -69,7 +69,11 @@ always @(posedge clk)
   if(start)
     miso <= din[(8*NBYTES-1)];
   else if(!busy)
+`ifdef SIM
     miso <= 1'bz;
+`else
+    miso <= miso;
+`endif
   else if(setup)
     miso <= dout[(8*NBYTES-1)];
 
