@@ -129,12 +129,18 @@ function(add_synth target)
         ${target}.vvp
     )
   else()
+    # don't use synth_ice40 -blif foo.blif
+    # to avoid problem of removing output file if 'check' fails
     add_custom_command(
         COMMENT "synth ${target}.blif"
         OUTPUT ${target}.blif
         DEPENDS ${YOSYS_EXECUTABLE} ${A_SRCS} ${A_DEPENDS}
                 ${CMAKE_CURRENT_BINARY_DIR}/${target}.vvp
-        COMMAND ${YOSYS_EXECUTABLE} -p "synth_ice40 -blif ${CMAKE_CURRENT_BINARY_DIR}/${target}.blif" ${B_SRCS} > ${CMAKE_CURRENT_BINARY_DIR}/${target}.blif.out
+        COMMAND ${CMAKE_COMMAND} -E remove -f ${target}.blif
+        COMMAND ${YOSYS_EXECUTABLE} -p "synth_ice40 -abc2 -retime"
+                                    -p "check -noinit -assert"
+                                    -p "write_blif -gates -attr -param ${CMAKE_CURRENT_BINARY_DIR}/${target}.blif"
+                                    ${B_SRCS} > ${CMAKE_CURRENT_BINARY_DIR}/${target}.blif.out
     )
 
     add_custom_command(

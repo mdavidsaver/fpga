@@ -72,6 +72,8 @@ uart #(
 
 wire [2:0] genio;
 assign select = genio[0];
+always @(*)
+  led[3:2] <= genio[2:1];
 
 spiart_logic L(
   .clk(clk),
