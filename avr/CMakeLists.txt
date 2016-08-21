@@ -11,27 +11,39 @@ add_definitions(-Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializ
 
 include(CMakeExtraGeneratorDetermineCompilerMacrosAndIncludeDirs)
 
+add_executable(blink
+  blink.c
+)
+
 add_executable(spiart_slave
   spiart_slave.c
 )
 
-add_custom_command(
-  OUTPUT spiart_slave.hex
-  COMMAND ${CMAKE_OBJCOPY} -O ihex spiart_slave.elf spiart_slave.hex
-  DEPENDS spiart_slave
+add_executable(shieldprog
+  shieldprog.c
 )
 
-if(AVRDUDE_EXECUTABLE)
-  message(STATUS "Can program")
-  add_custom_target(load-spiart_slave
-    COMMAND ${AVRDUDE_EXECUTABLE}
-      -p ${AVRDUDE_MCU} 
-      -c ${AVRDUDE_PROG}
-      -b ${AVRDUDE_BAUD}
-      -P ${AVRDUDE_PORT}
-      -U flash:w:spiart_slave.hex:i
-    DEPENDS
-      spiart_slave.hex
+foreach(prog blink;spiart_slave;shieldprog)
+
+  add_custom_command(
+    OUTPUT ${prog}.hex
+    COMMAND ${CMAKE_OBJCOPY} -O ihex ${prog}.elf ${prog}.hex
+    DEPENDS ${prog}
   )
-else()
-endif()
+
+  if(AVRDUDE_EXECUTABLE)
+    message(STATUS "Can program")
+    add_custom_target(load-${prog}
+      COMMAND ${AVRDUDE_EXECUTABLE}
+        -p ${AVRDUDE_MCU}
+        -c ${AVRDUDE_PROG}
+        -b ${AVRDUDE_BAUD}
+        -P ${AVRDUDE_PORT}
+        -U flash:w:${prog}.hex:i
+      DEPENDS
+        ${prog}.hex
+    )
+  else()
+  endif()
+
+endforeach()
