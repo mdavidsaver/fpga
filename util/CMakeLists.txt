@@ -18,3 +18,14 @@ add_isim(test_frac_div
     utest.vlib
 )
 add_itest(test_frac_div)
+
+add_isim(test_afifo
+  SRCS
+    afifo_tb.v
+    afifo.v
+  ARGS
+    -I${CMAKE_CURRENT_SOURCE_DIR}
+  DEPENDS
+    utest.vlib
+)
+add_itest(test_afifo)

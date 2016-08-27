@@ -48,6 +48,11 @@ function(add_isim target)
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${target}.vvp
     SOURCES ${A_DEPENDS}
   )
+  # manually run test
+  add_custom_target(run-${target}
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${target}.vvp
+    COMMAND ${PERL_EXECUTABLE} ${CMAKE_SOURCE_DIR}/util/tapit.pl "${VVP_EXECUTABLE} -M. -n -l${target}.tap ${target}.vvp"
+  )
 endfunction()
 
 function(add_itest target)
