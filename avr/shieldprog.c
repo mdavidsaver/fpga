@@ -63,10 +63,21 @@ static inline void uart_tx(uint8_t val)
     UDR0 = val;
 }
 
-static uint8_t uart_rx(void)
+static uint8_t uart_rx(uint8_t *ok)
 {
-    loop_until_bit_is_set(UCSR0A, RXC0);
-    return UDR0;
+    uint8_t sts, err, dat;
+    do {
+        sts = UCSR0A;
+    } while(!(sts&_BV(RXC0)));
+
+    dat = UDR0;
+
+    err = sts&(_BV(DOR0)|_BV(FE0));
+
+    if(ok)
+        *ok |= !err;
+
+    return err ? 0 : dat;
 }
 
 static inline void setup_spi(void)
@@ -122,53 +133,68 @@ static void bad_cmd(uint8_t val)
 
 static void spi_out(void)
 {
-    uint16_t len = uart_rx(), // LSB
-             tmp = uart_rx(); // MSB
+    uint8_t ok = 1;
+    uint16_t len = uart_rx(&ok), // LSB
+             tmp = uart_rx(&ok); // MSB
     len |= tmp<<8;
 
-    setup_spi();
+    if(ok)
+        setup_spi();
 
     /* number of output bytes is len+1 */
-    spi_byte(uart_rx());
+    if(ok)
+        spi_byte(uart_rx(&ok));
 
-    while(len--) {
-        spi_byte(uart_rx());
+    while(ok && len--) {
+        spi_byte(uart_rx(&ok));
     }
+
+    if(!ok)
+        bad_cmd(0x71);
 }
 
 static void spi_dummy(void)
 {
-    uint16_t len = uart_rx(), // LSB
-             tmp = uart_rx(); // MSB
+    uint8_t ok = 1;
+    uint16_t len = uart_rx(&ok), // LSB
+             tmp = uart_rx(&ok); // MSB
     len |= tmp<<8;
 
     setup_spi();
 
     spi_byte(0);
-    while(len--) {
+    while(ok && len--) {
         spi_byte(0);
     }
+
+    if(!ok)
+        bad_cmd(0x72);
 }
 
 static void gpio_dummy(void)
 {
-    uint16_t len = uart_rx();
+    uint8_t ok = 1;
+    uint16_t len = uart_rx(&ok);
 
     setup_gpio();
 
     spi_bit(0);
-    while(len--) {
+    while(ok && len--) {
         spi_bit(0);
     }
+
+    if(!ok)
+        bad_cmd(0x73);
 }
 
 static void uart_echo(void)
 {
-    uint8_t len = uart_rx();
+    uint8_t ok = 1;
+    uint8_t len = uart_rx(&ok);
 
-    uart_tx(uart_rx());
-    while(len--) {
-        uart_tx(uart_rx());
+    uart_tx(uart_rx(&ok));
+    while(ok && len--) {
+        uart_tx(uart_rx(&ok));
     }
     uart_tx(0xce);
 }
@@ -188,7 +214,8 @@ int main(void)
     SPCR = 0;
 
     while(1) {
-        uint8_t cmd = uart_rx();
+        uint8_t ok = 1;
+        uint8_t cmd = uart_rx(&ok);
         switch(cmd) {
         case 0x10: /* reset ice40 and prepare for programming */
             /* switch on drivers for SCK=1, MOSI=0, SS=0, and CRST=0 */
@@ -222,6 +249,9 @@ int main(void)
             break;
         case 0x42: /* echo over uart for debug or host sync check */
             uart_echo();
+            break;
+        case 0x43:
+            uart_tx(0x44);
             break;
         default:
             bad_cmd(cmd);

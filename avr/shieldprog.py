@@ -64,7 +64,7 @@ def main(args):
         while len(img):
             tosend, img = img[:1024], img[1024:]
 
-            ser.writel(struct.pack('<BH', 0x11, len(tosend)))
+            ser.writel(struct.pack('<BH', 0x11, len(tosend)-1))
             ser.writel(tosend)
             ser.wait_ack()
 
