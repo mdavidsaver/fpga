@@ -1,0 +1,22 @@
+add_isim(test_mcrc
+  SRCS
+    mcrc_tb.v
+    mcrc.v
+  ARGS
+    -I${PROJECT_SOURCE_DIR}/util
+  DEPENDS
+    ${PROJECT_SOURCE_DIR}/util/utest.vlib
+)
+add_itest(test_mcrc)
+
+add_isim(test_modbus_rx
+  SRCS
+    rx_tb.v
+    modbus_endpoint.v
+    mcrc.v
+  ARGS
+    -I${PROJECT_SOURCE_DIR}/util
+  DEPENDS
+    ${PROJECT_SOURCE_DIR}/util/utest.vlib
+)
+#add_itest(test_modbus_rx)
