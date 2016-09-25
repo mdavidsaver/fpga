@@ -2,20 +2,21 @@ module test;
 
 `include "utest.vlib"
 
-`TEST_PRELUDE(12)
+`TEST_PRELUDE(14)
 
 `TEST_CLOCK(clk,10);
 
-`TEST_TIMEOUT(2000)
+`TEST_TIMEOUT(4000)
 
 reg reset = 1, txbusy = 0, ready;
 reg [7:0] serrx;
 
 reg [15:0] rdata;
-reg ack;
+reg ack = 0;
 
 modbus_endpoint dut(
   .clk(clk),
+  .timeout_clk(clk),
   .reset(reset),
   .maddr(5),
   .txbusy(txbusy),
@@ -26,19 +27,7 @@ modbus_endpoint dut(
   .ack(ack)
 );
 
-reg send_prev;
-always @(posedge clk)
-  send_prev <= dut.send;
-
-reg [7:0] sertx;
-always @(posedge clk)
-  if({dut.send, send_prev}==2'b10)
-  begin
-    txbusy <= 1;
-    sertx  <= dut.dout;
-    $display("# sertx latch %02x", dut.dout);
-  end
-
+// TX -> MOSI
 reg crctx_reset=1;
 reg [15:0] crc_scratch;
 mcrc crctx(
@@ -62,19 +51,32 @@ task uart_tx;
   end
 endtask
 
+// RX -> MISO
+reg crcrx_reset=0, crcrx_latch=0;
+mcrc crcrx(
+  .clk(clk),
+  .reset(crcrx_reset),
+  .ready(crcrx_latch),
+  .din(dut.dout)
+);
+
 task uart_rx;
   output [7:0] val;
   begin
-    if(~txbusy) @(posedge txbusy);
-    if(dut.send) @(negedge dut.send);
-    val <= sertx;
-    @(negedge clk);
+    while(~dut.send) @(posedge clk);
+    crcrx_latch <= 1;
+    val <= dut.dout;
+    txbusy <= 1;
+    @(posedge clk);
+    crcrx_latch <= 0;
+    while(dut.send) @(posedge clk);
     txbusy <= 0;
     $display("# <- %02x", val);
   end
 endtask
 
 integer i;
+reg [15:0] scratch;
 
 task mod_rx;
   input [15:0] addr;
@@ -96,22 +98,37 @@ task mod_rx;
   uart_tx(crc_scratch);
   uart_tx(crc_scratch>>8);
 
-  uart_rx(cnt[7:0]);
-  `ASSERT_EQUAL(cnt[7:0], 5, "RX slave address")
-  uart_rx(cnt[7:0]);
-  `ASSERT_EQUAL(cnt[7:0], 3, "RX function")
-  uart_rx(cnt[7:0]);
-  `ASSERT_EQUAL(cnt[7:0], 2, "RX length in bytes")
+  uart_rx(scratch[7:0]);
+  `ASSERT_EQUAL(scratch[7:0], 5, "RX slave address")
+  uart_rx(scratch[7:0]);
+  `ASSERT_EQUAL(scratch[7:0], 3, "RX function")
+  uart_rx(scratch[7:0]);
+  `ASSERT_EQUAL(scratch[7:0], cnt*2, "RX length in bytes")
 
   for(i=0; i<cnt; i=i+1) begin
-    while(~dut.valid) @(posedge dut.valid);
-    rdata <= addr;
+    while(~dut.valid) @(posedge clk);
+    rdata <= 16'habcd ^ addr+i;
     ack   <= 1;
     $display("Bus Read %04x", addr);
-    @(negedge dut.valid);
+    while(dut.valid) @(posedge clk);
     rdata <= 16'hxx;
     ack   <= 0;
+
+    uart_rx(scratch[15:8]);
+    uart_rx(scratch[7:0]);
+    `ASSERT_EQUAL(scratch, 16'habcd ^ addr+i, "RX data")
   end
+
+  crc_scratch = crcrx.crc;
+  uart_rx(scratch[7:0]);
+  uart_rx(scratch[15:8]);
+  `ASSERT_EQUAL(crc_scratch, scratch, "RX CRC")
+
+  crctx_reset <= 1;
+  crcrx_reset <= 1;
+  @(posedge clk);
+  crctx_reset <= 0;
+  crcrx_reset <= 0;
 
   end
 endtask
@@ -126,7 +143,9 @@ begin
   `ASSERT_EQUAL(dut.state, dut.S_IDLE, "IDLE")
 
   mod_rx(0, 1);
+  mod_rx(16'h1234, 4);
 
+  #4
   `TEST_DONE
 end
 

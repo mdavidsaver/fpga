@@ -33,7 +33,7 @@ module modbus_endpoint(
   input         rxerr,// RX bad frame
   input   [7:0] din,  // RX data
 
-  output        timeout_clk,  // Inactivity timeout clock.  Must be a integer fraction of 'clk'
+  input         timeout_clk,  // Inactivity timeout clock.  Must be a integer fraction of 'clk'
                               // timeout period is (1<<TMOSIZE)-1 ticks of this clock
 
   // Slave bus
@@ -242,6 +242,7 @@ begin
         end else begin
           // send slave address
           crc_mode <= 1;
+          crc_hold <= 0;
           state <= S_TX_RD_FUNC;
           dout  <= maddr;
           send  <= 1;
@@ -266,7 +267,7 @@ begin
     S_TX_RD_FUNC: begin
       if(txbusy) begin
         send <= 0;
-      end else begin
+      end else if(~send) begin
         dout  <= 3;
         send  <= 1;
         state <= S_TX_RD_CNT;
@@ -276,7 +277,7 @@ begin
     S_TX_RD_CNT: begin
       if(txbusy) begin
         send <= 0;
-      end else begin
+      end else if(~send) begin
         dout  <= dcnt<<1;
         send  <= 1;
         // Handle zero length read
@@ -287,14 +288,14 @@ begin
     S_TX_RD_BUS_PREP: begin
       if(txbusy) begin
         send <= 0;
-      end else begin
+      end else if(~send) begin
         state <= S_TX_RD_BUS;
       end
     end
     
     S_TX_RD_BUS: if(ack) begin
-      dout         <= wdata[15:8];
-      scratch <= wdata[7:0];
+      dout         <= rdata[15:8];
+      scratch      <= rdata[7:0];
       send         <= 1;
       state        <= S_TX_RD_DATA_L;
       addr         <= addr+2;
@@ -304,7 +305,7 @@ begin
     S_TX_RD_DATA_L: begin
       if(txbusy) begin
         send <= 0;
-      end else begin
+      end else if(~send & ~ack) begin
         dout  <= scratch;
         send  <= 1;
         state <= dcnt==0 ? S_TX_CRC_L : S_TX_RD_BUS_PREP;
@@ -320,7 +321,7 @@ begin
     S_TX_EXC_CODE: begin
       if(txbusy) begin
         send <= 0;
-      end else begin
+      end else if(~send) begin
         dout  <= except;
         send  <= 1;
         state <= S_TX_CRC_L;
@@ -330,7 +331,7 @@ begin
     S_TX_CRC_L: begin
       if(txbusy) begin
         send <= 0;
-      end else begin
+      end else if(~send) begin
         dout         <= crc_current[7:0];
         scratch <= crc_current[15:8];
         send  <= 1;
@@ -341,7 +342,7 @@ begin
     S_TX_CRC_H: begin
       if(txbusy) begin
         send <= 0;
-      end else begin
+      end else if(~send) begin
         dout  <= scratch;
         send  <= 1;
         state <= S_IDLE;

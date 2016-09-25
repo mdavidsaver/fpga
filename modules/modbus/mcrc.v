@@ -32,7 +32,7 @@ reg [CWIDTH-1:0] crc = INITIAL;
 
 wire [CWIDTH-1:0] stage[0:DWIDTH];
 
-assign stage[0] = crc ^ din;
+assign stage[0] = (reset ? INITIAL : crc) ^ din;
 
 genvar i;
 generate
@@ -44,9 +44,9 @@ generate
 endgenerate
 
 always @(posedge clk)
-  if(reset)
-    crc <= INITIAL;
-  else if(ready)
+  if(ready)
     crc <= stage[DWIDTH];
+  else if(reset)
+    crc <= INITIAL;
 
 endmodule
