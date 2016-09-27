@@ -109,7 +109,7 @@ task mod_rx;
     while(~dut.valid) @(posedge clk);
     rdata <= 16'habcd ^ addr+i;
     ack   <= 1;
-    $display("Bus Read %04x", addr);
+    $display("Bus Read %04x", dut.addr);
     while(dut.valid) @(posedge clk);
     rdata <= 16'hxx;
     ack   <= 0;
@@ -142,6 +142,7 @@ begin
 
   `ASSERT_EQUAL(dut.state, dut.S_IDLE, "IDLE")
 
+  $display("# Test READ HOLDING");
   mod_rx(0, 1);
   mod_rx(16'h1234, 4);
 

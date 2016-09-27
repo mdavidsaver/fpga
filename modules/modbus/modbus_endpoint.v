@@ -59,8 +59,7 @@ localparam S_IDLE         =0, // waiting for start of frame (slave address)
            S_TX_RD_CNT    =9,
            S_TX_RD_BUS_PREP  =10,
            S_TX_RD_BUS    =11,
-           //S_TX_RD_DATA_H =12,
-           S_TX_RD_DATA_L =13,
+           S_TX_RD_DATA_L =12,
            // -> S_TX_RD_BUS or S_TX_CRC1
 /*
            // Handle Write request
@@ -110,8 +109,9 @@ reg  [7:0] scratch;
 // same CRC calculator use for both RX and TX phases
 reg  crc_mode = 0, crc_mode_prev; // 0 - RX, 1 - TX
 reg  crc_hold = 0;
-wire crc_reset = (state==S_IDLE & ~ready)
-               | crc_mode!=crc_mode_prev;
+wire crc_reset = (state==S_IDLE)
+               | (state==S_TX_RD_EXC_FUNC)
+               | (crc_mode!=crc_mode_prev);
 wire [15:0] crc_current;
 wire [15:0] crc_expect = {din, scratch};
 
@@ -127,12 +127,13 @@ mcrc crc(
 );
 
 parameter TMOSIZE = 8;
+parameter TMOMAX = {TMOSIZE{1'b1}};
 
 reg [TMOSIZE-1:0] tmocnt;
 
 always @(posedge clk)
   if(ready & state==S_IDLE)
-    tmocnt <= {TMOSIZE{1'b1}}; // Start timeout count down
+    tmocnt <= TMOMAX; // Start timeout count down
   else if(state!=S_IDLE & timeout_clk & tmocnt>0)
     tmocnt <= tmocnt-1;        // count down while not idleing
 
@@ -186,6 +187,7 @@ begin
           // but we don't know how long the message is, so we have to bail now
           except <= 1; // illegal function
           state  <= S_TX_RD_EXC_FUNC;
+          crc_mode <= 1;
           // after this point we don't send exception until
           // CRC match
         end
@@ -239,6 +241,7 @@ begin
           state <= S_IDLE;
         end else if(except) begin
           state  <= S_TX_RD_EXC_FUNC;
+          crc_mode <= 1;
         end else begin
           // send slave address
           crc_mode <= 1;
