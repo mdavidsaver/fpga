@@ -23,6 +23,20 @@ add_isim(test_modbus_rx
 )
 add_itest(test_modbus_rx)
 
+add_isim(test_modbus_tx
+  SRCS
+    tx_tb.v
+    modbus_endpoint.v
+    mcrc.v
+  ARGS
+    -I${CMAKE_CURRENT_SOURCE_DIR}
+    -I${PROJECT_SOURCE_DIR}/util
+  DEPENDS
+    ${PROJECT_SOURCE_DIR}/util/utest.vlib
+    ${CMAKE_CURRENT_SOURCE_DIR}/mtest.vlib
+)
+add_itest(test_modbus_tx)
+
 add_isim(test_modbus_err
   SRCS
     err_tb.v
@@ -35,4 +49,4 @@ add_isim(test_modbus_err
     ${PROJECT_SOURCE_DIR}/util/utest.vlib
     ${CMAKE_CURRENT_SOURCE_DIR}/mtest.vlib
 )
-#add_itest(test_modbus_err)
+add_itest(test_modbus_err)

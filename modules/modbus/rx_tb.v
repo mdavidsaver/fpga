@@ -4,7 +4,7 @@ module test;
 `define TMOMAX 8'hff
 `include "mtest.vlib"
 
-`TEST_PRELUDE(14)
+`TEST_PRELUDE(19)
 
 `TEST_CLOCK(clk,10);
 
@@ -29,6 +29,7 @@ task mod_rx;
     rdata <= 16'habcd ^ addr+i;
     ack   <= 1;
     $display("Bus Read %04x", dut.addr);
+    `ASSERT_EQUAL(dut.iswrite, 0, "Read")
     while(dut.valid) @(posedge clk);
     rdata <= 16'hxx;
     ack   <= 0;

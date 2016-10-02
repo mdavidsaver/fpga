@@ -57,10 +57,10 @@ localparam S_IDLE         =0, // waiting for start of frame (slave address)
            S_RX_VAL_L  =5,
            S_RX_CRC_L  =6,
            S_RX_CRC_H  =7,
-           // -> S_TX_FUNC | S_HOLDOFF
+           // -> S_TX_FUNC | S_TX_WR_BUS_PREP | S_HOLDOFF
            // Send response
            S_TX_FUNC   =8,
-           // -> S_TX_RD_CNT | S_TX_WR_BUS_PREP
+           // -> S_TX_RD_CNT | S_TX_WR_ADDR_H
            // Send Read response
            S_TX_RD_CNT    =9,
            S_TX_RD_BUS_PREP  =10,
@@ -68,12 +68,12 @@ localparam S_IDLE         =0, // waiting for start of frame (slave address)
            S_TX_RD_DATA_L =12,
            // -> S_TX_RD_BUS or S_TX_CRC1
            // Send Write response
-           S_TX_WR_BUS_PREP =20,
            S_TX_WR_BUS =21,
-           S_TX_WR_ADDR_L =22,
-           S_TX_WR_ADDR_H =23,
-           S_TX_WR_DATA_L =24,
-           S_TX_WR_DATA_H =25,
+           // -> S_TX_FUNC
+           S_TX_WR_ADDR_H =22,
+           S_TX_WR_ADDR_L =23,
+           S_TX_WR_DATA_H =24,
+           S_TX_WR_DATA_L =25,
            // -> S_TX_CRC1
            // Finalize all TX
            S_TX_CRC_L     =29,
@@ -229,8 +229,7 @@ begin
 
         // process write if bcast or selected
         if(func_write & (address_bcast | address_me)) begin
-          state <= S_TX_FUNC;
-          send  <= 1;
+          state <= S_TX_WR_BUS;
         end
         // process read only when selected
         else if(~func_write & address_me) begin
@@ -263,7 +262,7 @@ begin
       end else if(~send) begin
         if(func_write) begin
           dout  <= 6;
-          state <= S_TX_WR_BUS_PREP;
+          state <= S_TX_WR_ADDR_H;
         end else begin
           dout  <= 3;
           state <= S_TX_RD_CNT;
@@ -309,17 +308,11 @@ begin
         state <= wdata[6:0]==0 ? S_TX_CRC_L : S_TX_RD_BUS_PREP;
       end      
     end
-
-    S_TX_WR_BUS_PREP: begin
-      if(txbusy) begin
-        send <= 0;
-      end else if(~send) begin
-        state <= S_TX_WR_BUS;
-      end
-    end
     
     S_TX_WR_BUS: if(ack) begin
-      state        <= S_TX_WR_ADDR_H;
+      state        <= S_TX_FUNC;
+      // dout setup in S_RX_CRC_H
+      send         <= 1;
     end
 
     S_TX_WR_ADDR_H: begin
