@@ -6,80 +6,94 @@
  3. Wait for 'busy'==0, complete
 */
 module uart_tx(
-  input wire       ref_clk,
-  input wire       bit_clk,
-  input wire       send, // command to send
-  input wire [7:0] in,
-  output           busy, // rising edge with 'send', falling edge after stop bit
-  output reg       out
+  input       ref_clk,
+  input       bit_clk,
+  input       send, // command to send
+  input [7:0] in,
+  output      busy, // rising edge with 'send', falling edge after stop bit
+  output      out
 );
 
-reg busy;
+localparam S_IDLE = 0,
+           S_START= 1,
+           S_BIT0 = 2,
+           S_BIT1 = 3,
+           S_BIT2 = 4,
+           S_BIT3 = 5,
+           S_BIT4 = 6,
+           S_BIT5 = 7,
+           S_BIT6 = 8,
+           S_BIT7 = 9,
+           S_STOP = 10,
+           S_DONE = 11;
+
+reg busy, out;
 reg [7:0] data;
+(* fsm_encoding = "auto" *)
 reg [3:0] state = 0;
 
 always @(posedge ref_clk)
   case(state)
-  0:begin // IDLE
+  S_IDLE:begin
     busy  <= send;
     data  <= in;
-    state <= send ? 1 : 0;
+    state <= send ? S_START : S_IDLE;
     out   <= 0;
   end
-  1:if(bit_clk) // start bit
+  S_START:if(bit_clk)
     begin
       out   <= 1;
-      state <= 2;
+      state <= S_BIT0;
     end
-  2:if(bit_clk) // data bit 0
+  S_BIT0:if(bit_clk)
     begin
       out   <= ~data[0];
-      state <= 3;
+      state <= S_BIT1;
     end
-  3:if(bit_clk) // data bit 1
+  S_BIT1:if(bit_clk)
     begin
       out   <= ~data[1];
-      state <= 4;
+      state <= S_BIT2;
     end
-  4:if(bit_clk) // data bit 2
+  S_BIT2:if(bit_clk)
     begin
       out   <= ~data[2];
-      state <= 5;
+      state <= S_BIT3;
     end
-  5:if(bit_clk) // data bit 3
+  S_BIT3:if(bit_clk)
     begin
       out   <= ~data[3];
-      state <= 6;
+      state <= S_BIT4;
     end
-  6:if(bit_clk) // data bit 4
+  S_BIT4:if(bit_clk)
     begin
       out   <= ~data[4];
-      state <= 7;
+      state <= S_BIT5;
     end
-  7:if(bit_clk) // data bit 5
+  S_BIT5:if(bit_clk)
     begin
       out   <= ~data[5];
-      state <= 8;
+      state <= S_BIT6;
     end
-  8:if(bit_clk) // data bit 6
+  S_BIT6:if(bit_clk)
     begin
       out   <= ~data[6];
-      state <= 9;
+      state <= S_BIT7;
     end
-  9:if(bit_clk) // data bit 7
+  S_BIT7:if(bit_clk)
     begin
       out   <= ~data[7];
-      state <= 10;
+      state <= S_STOP;
     end
-  10:if(bit_clk) // Stop bit
+  S_STOP:if(bit_clk)
     begin
       out   <= 0;
-      state <= 11;
+      state <= S_DONE;
     end
-  11:if(bit_clk) // end of stop bit
+  S_DONE:if(bit_clk) // end of stop bit
     begin
       out   <= 0;
-      state <= 0; // return to idle (TODO: check 'send' here for fast start?)
+      state <= S_IDLE;
       busy  <= 0;
     end
   endcase
