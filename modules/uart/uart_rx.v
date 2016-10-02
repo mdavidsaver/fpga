@@ -1,9 +1,11 @@
+/* RS232 receiver
+ */
 module uart_rx(
-  input wire       ref_clk,
-  input wire       samp_clk,
+  input wire       ref_clk,   // logic clock
+  input wire       samp_clk,  // bit sampling clock
   input wire       in,
   input wire       reset,
-  output reg [0:7] out,
+  output reg [7:0] out,
   output wire      busy,
   output reg       ready,
   output reg       err,
@@ -25,63 +27,83 @@ always @(posedge ref_clk)
   end
 
 // samples 90 deg. after rising edge
-assign bit_clk = phase_cnt==(2**Oversample)/2-1; //{1'b0, {Oversample-1{1'b1}}};
+assign bit_clk = samp_clk & phase_cnt==(2**Oversample)/2-1; //{1'b0, {Oversample-1{1'b1}}};
 
-reg [3:0] state = 0;
 
-assign busy = state!=0;
+localparam S_IDLE = 0,
+           S_START= 1,
+           S_BIT0 = 2,
+           S_BIT1 = 3,
+           S_BIT2 = 4,
+           S_BIT3 = 5,
+           S_BIT4 = 6,
+           S_BIT5 = 7,
+           S_BIT6 = 8,
+           S_BIT7 = 9,
+           S_STOP = 10,
+           S_DONE = 11;
+
+reg [3:0] state = S_IDLE;
+
+assign busy = state!=S_IDLE;
 
 always @(posedge ref_clk)
-  if(!samp_clk)
   begin
     ready <= 0;
     err   <= 0;
-  end 
-  else if(reset)
-  begin
-    ready <= 0;
-    out   <= 0;
-    state <= 0;
-    err   <= 0;
-  end
-  else if(state==0) // wait for rising edge of start bit
-  begin
-    ready <= 0;
-    out   <= 0;
-    err   <= 0;
-    if(in==0) state <= 0; // continue waiting
-    else      state <= 1; // have start bit, phase_cnt starts to run
-  end
-  else if(!bit_clk) // don't proceed unless sync'd
-  begin
-    // noop
-  end
-  else if(state==1) // sample start bit
-  begin
-    ready <= 0;
-    out   <= 0;
-    if(in==0) state <= 0; // triggered on noise, reset
-    else      state <= 2; // have start bit
-  end
-  else if(state==10) // check for stop bit
-  begin
-    state <= 0;
-    if(in==1) // not stop bit, bad frame (reset)
-    begin
-      ready <= 0;
+    if(reset) begin
       out   <= 0;
-      err   <= 1;
+      state <= S_IDLE;
+    end else if(state==S_IDLE) begin
+      // handle S_IDLE specially as the transition from IDLE -> START
+      // resets the phase of bit_clk
+      out   <= 0;
+      state <= in ? S_START : S_IDLE;
+    end else if(bit_clk) case(state)
+    S_START:begin
+        state <= in ? S_BIT0 : S_IDLE;
     end
-    else
-    begin // have stop bit
-      ready <= 1;
-      out   <= out;
+    S_BIT0: begin
+        out[0] <= ~in;
+        state  <= S_BIT1;
     end
-  end
-  else
-  begin // sample data bit
-    out   <= {~in, out[0:6]};
-    state <= state+1;
+    S_BIT1: begin
+        out[1] <= ~in;
+        state  <= S_BIT2;
+    end
+    S_BIT2: begin
+        out[2] <= ~in;
+        state  <= S_BIT3;
+    end
+    S_BIT3: begin
+        out[3] <= ~in;
+        state  <= S_BIT4;
+    end
+    S_BIT4: begin
+        out[4] <= ~in;
+        state  <= S_BIT5;
+    end
+    S_BIT5: begin
+        out[5] <= ~in;
+        state  <= S_BIT6;
+    end
+    S_BIT6: begin
+        out[6] <= ~in;
+        state  <= S_BIT7;
+    end
+    S_BIT7: begin
+        out[7] <= ~in;
+        state  <= S_STOP;
+    end
+    S_STOP:begin
+        state <= S_IDLE;
+        if(!in) begin
+          ready <= 1;
+        end else begin
+          err   <= 0;
+        end
+    end
+    endcase
   end
 
 endmodule

@@ -30,7 +30,7 @@ localparam S_IDLE = 0,
 reg busy, out;
 reg [7:0] data;
 (* fsm_encoding = "auto" *)
-reg [3:0] state = 0;
+reg [3:0] state = S_IDLE;
 
 always @(posedge ref_clk)
   case(state)

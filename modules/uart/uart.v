@@ -5,14 +5,14 @@ module uart(
   input  wire       rin,   // rs232 data in
   output wire       rout,  // rs232 data out
 
-  input wire [0:7]  din,   // data to TX
+  input wire [7:0]  din,   // data to TX
   input wire        send,
   output wire       txbusy,
 
   output wire       rxbusy, // RX in progress
   output wire       ready,// pulsed when new data received
   output wire       rxerr,// RX bad frame
-  output wire [0:7] dout,  // RX data
+  output wire [7:0] dout,  // RX data
 
   output wire       samp_clk, // oversampled baud rate clock (debug)
   output wire       tx_bit_clk,  // TX bit clock (debug)

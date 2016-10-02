@@ -2,11 +2,11 @@ module test;
 
 `include "utest.vlib"
 
-`TEST_PRELUDE(9)
+`TEST_PRELUDE(12)
 
-`TEST_CLOCK(clk,1);
+`TEST_CLOCK(clk,10);
 
-`TEST_TIMEOUT(20000)
+`TEST_TIMEOUT(200000)
 
 reg [3:0] clk8_cnt = 0;
 always @(posedge clk)
@@ -14,13 +14,22 @@ always @(posedge clk)
 
 wire clk8 = clk8_cnt[3];
 
+reg [3:0] clk64_cnt = 0;
+always @(posedge clk)
+  if(clk8)
+    clk64_cnt <= clk64_cnt[2:0]+1;
+
+wire clk64 = clk8 & clk64_cnt[3];
+
 reg din, reset=1;
 reg [7:0] expect;
 
 wire ready, bit_clk;
 wire [7:0] data;
 
-uart_rx D(
+uart_rx #(
+  .Oversample(3) // 8 samples per bit
+) D(
   .ref_clk(clk),
   .samp_clk(clk8),
   .reset(reset),
@@ -37,29 +46,38 @@ uart_rx D(
 task uart_recv;
   input [7:0] val;
   begin
-    `DIAG("uart_recv")
-    @(negedge clk8);
+    $display("# uart_recv %02x", val);
+    clk64_cnt = 0;
     expect = val;
     din = 1;
-    @(negedge bit_clk);
+    while(~clk64) @(posedge clk);
     din = ~val[0];
-    @(negedge bit_clk);
+    @(negedge clk64);
+    while(~clk64) @(posedge clk);
     din = ~val[1];
-    @(negedge bit_clk);
+    @(negedge clk64);
+    while(~clk64) @(posedge clk);
     din = ~val[2];
-    @(negedge bit_clk);
+    @(negedge clk64);
+    while(~clk64) @(posedge clk);
     din = ~val[3];
-    @(negedge bit_clk);
+    @(negedge clk64);
+    while(~clk64) @(posedge clk);
     din = ~val[4];
-    @(negedge bit_clk);
+    @(negedge clk64);
+    while(~clk64) @(posedge clk);
     din = ~val[5];
-    @(negedge bit_clk);
+    @(negedge clk64);
+    while(~clk64) @(posedge clk);
     din = ~val[6];
-    @(negedge bit_clk);
+    @(negedge clk64);
+    while(~clk64) @(posedge clk);
     din = ~val[7];
-    @(negedge bit_clk);
+    @(negedge clk64);
+    while(~clk64) @(posedge clk);
     din = 0;
-    @(posedge ready);
+    `DIAG("Wait for ready")
+    while(~ready) @(posedge clk);
     `ASSERT_EQUAL(expect, data, "expect == data")
   end
 endtask
@@ -84,7 +102,15 @@ begin
   `CHECK("Idle",0,0)
   uart_recv(8'b10010011);
   uart_recv(8'b01001101);
-  
+
+  #1330 @(posedge clk);
+  uart_recv(8'h12);
+
+  #1330 @(posedge clk);
+  uart_recv(8'b10101010);
+
+  #1330 @(posedge clk);
+  uart_recv(8'b01010101);
   `TEST_DONE
 end
 
