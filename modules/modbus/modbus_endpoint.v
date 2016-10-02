@@ -21,7 +21,7 @@ module modbus_endpoint(
   input         clk,  // ref clock
 
   // Configuration
-  input [6:0]   maddr, // MODBUS slave address (must not be zero)
+  input [6:0]   maddr, // MODBUS slave address.  Must not be zero.  Should not change while frame_busy
 
   // UART interface
   // TX (MISO)
@@ -45,6 +45,7 @@ module modbus_endpoint(
   input         ack,
 
   // Status
+  output        frame_busy,
   output        frame_err
 );
 
@@ -92,6 +93,7 @@ always @(posedge clk)
 wire txstart = {send, send_prev}==2'b10;
 
 assign frame_err = state==S_HOLDOFF;
+assign frame_busy = state!=S_IDLE;
 
 // slave bus
 assign valid = state==S_TX_RD_BUS | state==S_TX_WR_BUS;
