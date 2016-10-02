@@ -261,7 +261,7 @@ begin
     S_TX_FUNC: begin
       if(txbusy) begin
         send <= 0;
-      end else if(~send) begin
+      end else if(~send & ~ack) begin
         if(func_write) begin
           dout  <= 6;
           state <= S_TX_WR_ADDR_H;
@@ -300,7 +300,7 @@ begin
       addr         <= addr+2;
       wdata[6:0]   <= wdata[6:0]-1;
     end
-    
+
     S_TX_RD_DATA_L: begin
       if(txbusy) begin
         send <= 0;
