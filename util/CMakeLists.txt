@@ -29,3 +29,14 @@ add_isim(test_afifo
     utest.vlib
 )
 add_itest(test_afifo)
+
+add_isim(test_sfifo
+  SRCS
+    sfifo_tb.v
+    sfifo.v
+  ARGS
+    -I${CMAKE_CURRENT_SOURCE_DIR}
+  DEPENDS
+    utest.vlib
+)
+add_itest(test_sfifo)
