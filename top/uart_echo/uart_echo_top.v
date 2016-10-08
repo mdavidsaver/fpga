@@ -23,6 +23,7 @@ assign sig2 = serrx;
 
 // 12000000/(115200*8) ~= 2**10/78   (0.825 % error)
 uart #(
+  .Oversample(3), // 2**3 == 8
   .Width(10),
   .Incr(78)
 )D(
@@ -54,7 +55,7 @@ always @(posedge rxerr)
   led[4] <= ~led[4]; // center
 
 always @(posedge clk)
-  if(!txbusy & ready) // RX complete, begin TX
+  if(~txbusy & ready) // RX complete, begin TX
   begin
     dlatch <= din;
     send   <= 1;
