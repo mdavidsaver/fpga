@@ -15,6 +15,10 @@ add_executable(blink
   blink.c
 )
 
+add_executable(uart_echo
+  uart_echo.c
+)
+
 add_executable(spiart_slave
   spiart_slave.c
 )
@@ -23,7 +27,7 @@ add_executable(shieldprog
   shieldprog.c
 )
 
-foreach(prog blink;spiart_slave;shieldprog)
+foreach(prog blink;uart_echo;spiart_slave;shieldprog)
 
   add_custom_command(
     OUTPUT ${prog}.hex
