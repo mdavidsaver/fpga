@@ -167,7 +167,7 @@ int main(void)
     /* switch on drivers for SCK=1, MOSI=0, SS=0, and CRST=1 */
     /* MISO and CDNE remain inputs */
     PORT_SPI = _BV(PORT_SCLK) | _BV(PORT_CRST);
-    DDR_SPI = _BV(DD_SCLK) | _BV(DD_MOSI) | _BV(DD_CRST) | _BV(DD_SS);
+    DDR_SPI = _BV(DD_SCLK) | _BV(DD_MOSI) | _BV(DD_SS) | _BV(DD_CRST);
 
     /* SPI engine disabled */
     SPCR = 0;
@@ -203,8 +203,14 @@ int main(void)
         case 0x11: /* Byte out, no read */
             uart_tx(cmd);
             setup_spi();
-            spi_byte(val);
-            uart_tx(val); // echo
+        {
+            uint8_t cnt = val;
+            while(ok && cnt--) {
+                uint8_t b = uart_rx(&ok);
+                spi_byte(b);
+            }
+            uart_tx(ok ? val : ~val);
+        }
             break;
 
         case 0x13: /* Bits out, no data (read or write) */
@@ -223,7 +229,7 @@ int main(void)
 
         case 0x15:
             uart_tx(cmd);
-            uart_tx((PIN_SPI&PIN_CDNE)?0xd0:0xbd);
+            uart_tx((PIN_SPI&_BV(PIN_CDNE))?0xd0:0xbd);
 
         case 0x42:
             uart_tx(cmd);

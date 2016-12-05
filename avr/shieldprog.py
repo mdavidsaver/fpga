@@ -67,6 +67,15 @@ def main(args):
         print("Reset and enter program")
         ser.cmd(0x10, 0, expect=0xbd)
 
+        while len(img):
+            print("###", len(img))
+            B, img = img[:128], img[128:]
+            ser.writel(struct.pack('<BB', 0x11, len(B)))
+            ser.write(B)
+            R, V = struct.unpack('<BB', ser.readl(2))
+            if (R, V) != (0x11, len(B)):
+                raise RuntimeError("Block error %s %s"%((R, V), (0x11, len(B))))
+
         for i,I in enumerate(img):
             print("### i =",i, len(img))
             #ser.echo()
@@ -81,8 +90,6 @@ def main(args):
         ser.cmd(0x13, 1)
 
         ser.cmd(0x14, 0, expect=0x22)
-
-        time.sleep(1.0) # wait for Arduino to reset
 
         print("Check CDONE")
         ser.cmd(0x15, 0, expect=0xd0) # cdone set
