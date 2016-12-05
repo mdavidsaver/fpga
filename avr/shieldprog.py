@@ -3,6 +3,7 @@
 from __future__ import print_function
 
 import sys, struct, time
+from random import randint
 import serial
 
 def getargs():
@@ -15,33 +16,35 @@ def getargs():
 
 class AVR(serial.Serial):
     def writel(self, msg):
-        print(">>>", repr(msg))
+        print("<<<", repr(msg))
         self.write(msg)
+
     def readl(self, N):
         ret = self.read(N)
-        print("<<<", repr(ret))
+        print(">>>", repr(ret))
         return ret
 
-    def echo_check(self, data):
-        cmd = struct.pack("<BB", 0x42, len(data)-1)+data
+    def cmd(self, code, val, expect=None):
+        cmd = struct.pack("<BB", code, val)
         self.writel(cmd)
-        rep = self.readl(len(data)+1)
-        if rep!=data+'\xce':
-            raise RuntimeError("Echo test fail %s != %s"%(repr(data), repr(rep)))
+        rep, rval = struct.unpack("<BB", self.readl(2))
+        if rep!=code or (expect is not None and rval!=expect):
+            raise RuntimeError("Command fails %s != %s (%s)"%((code,val),(rep,rval),expect))
+        return rval
 
-    def wait_ack(self, cdone=None):
-        R = self.readl(2)
-        if R[0]!=b'\x10':
-            raise RuntimeError("Bad ack %s"%repr(R))
-        elif cdone is not  None and ord(R[1])!=cdone:
-            raise RuntimeError("CDONE not as expected %x != %x"%(ord(R[1]), cdone))
-        return ord(R[1])
+    def echo(self):
+        N = randint(0,255)
+        self.cmd(0x42, N, expect=N)
+
 
 def main(args):
     if args.device is None:
         # by default find the first Arduino-ish TTY
         from glob import glob
         args.device = glob('/dev/ttyACM*')[0]
+
+    print("<<< to device")
+    print(">>> from device")
 
     with open(args.binfile, 'rb') as F:
         img = F.read()
@@ -52,35 +55,38 @@ def main(args):
 
     with AVR(port=args.device, baudrate=115200) as ser:
         #ser.open()
-        time.sleep(0.5) # wait for Arduino to reset
+        print ("Open", args.device)
+        time.sleep(2.0) # wait for Arduino to reset
         ser.flush()
+        print("Begin")
 
-        ser.echo_check(b'\xde\xad')
+        ser.echo()
+        ser.echo()
+        ser.echo()
 
-        ser.writel(b'\x10') # reset and enter programming mode
-        ser.wait_ack(cdone=0)
+        print("Reset and enter program")
+        ser.cmd(0x10, 0, expect=0xbd)
 
-        # send bit stream in 1k chunks
-        while len(img):
-            tosend, img = img[:1024], img[1024:]
+        for i,I in enumerate(img):
+            print("### i =",i, len(img))
+            #ser.echo()
+            ser.cmd(0x11, ord(I), expect=ord(I))
 
-            ser.writel(struct.pack('<BH', 0x11, len(tosend)-1))
-            ser.writel(tosend)
-            ser.wait_ack()
 
         # must send 49 dummy bits
+        # 6 dummy bytes
+        for i in range(6):
+            ser.cmd(0x11, 0, expect=0)
+        # 1 dummy bit
+        ser.cmd(0x13, 1)
 
-        ser.writel(struct.pack('<BB', 0x12, 5)) # 6 dummy bytes
-        ser.wait_ack()
+        ser.cmd(0x14, 0, expect=0x22)
 
-        ser.writel(struct.pack('<BB', 0x13, 0)) # 1 dummy bit
-        ser.wait_ack(cdone=1)
+        time.sleep(1.0) # wait for Arduino to reset
 
-        # exit programming mode (SPI and control pins tri-state)
-        ser.writel('\x14')
-        ser.wait_ack(cdone=1)
+        print("Check CDONE")
+        ser.cmd(0x15, 0, expect=0xd0) # cdone set
 
-        ser.echo(check(b'\xbe\xef'))
 
 if __name__=='__main__':
     main(getargs())
