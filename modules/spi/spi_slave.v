@@ -50,7 +50,7 @@ always @(posedge clk)
   mosi_x <= mosi;
 
 reg [(3+NBYTES):0] cnt = 0;
-assign busy = cnt!=0 & select_x[0];
+assign busy = start | (cnt!=0 & select_x[0]);
 
 always @(posedge clk)
   if(start) begin

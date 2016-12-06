@@ -82,7 +82,7 @@ task spi_shift;
         dshift <= {dshift[(8*NBYTES-2):0], miso};
     end
 
-    @(posedge done);
+    while(~done) @(posedge clk);
 
     `ASSERT_EQUAL(0, busy, "busy")
 
