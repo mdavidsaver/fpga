@@ -100,6 +100,12 @@ if(YOSYS_EXECUTABLE AND ARACHNE_EXECUTABLE AND ICEPACK_EXECUTABLE)
     set(CAN_TIME 1)
   message(STATUS "Can time")
   endif()
+
+  get_filename_component(_yosys_bin ${YOSYS_EXECUTABLE} DIRECTORY)
+
+  set(YOSYS_SHARE "${_yosys_bin}/../share/yosys"
+    CACHE PATH "Location of yosys data files"
+  )
 endif()
 
 function(add_synth target)
@@ -124,8 +130,9 @@ function(add_synth target)
   add_custom_command(
     COMMENT "Test Compile ${target}.vvp"
     OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/${target}.vvp
-    DEPENDS ${IVERILOG_EXECUTABLE} ${A_SRCS} ${A_DEPENDS}
-    COMMAND ${IVERILOG_EXECUTABLE} -o ${CMAKE_CURRENT_BINARY_DIR}/${target}.vvp -DSIM "-DVCD=\"\\\"${target}.vcd\\\"\"" -g2001 -Wall ${A_ARGS} ${B_SRCS}
+    DEPENDS ${IVERILOG_EXECUTABLE} ${A_SRCS} ${A_DEPENDS} 
+       ${YOSYS_SHARE}/ice40/cells_sim.v
+    COMMAND ${IVERILOG_EXECUTABLE} -o ${CMAKE_CURRENT_BINARY_DIR}/${target}.vvp -DSIM "-DVCD=\"\\\"${target}.vcd\\\"\"" -g2001 -Wall ${A_ARGS} ${B_SRCS} ${YOSYS_SHARE}/ice40/cells_sim.v
   )
 
   if(NOT CAN_SYNTH)
