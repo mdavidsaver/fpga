@@ -17,6 +17,7 @@ module spi_slave(
   input  wire       mosi,
   output reg        miso,
 
+  output reg        din_latch,        // pulsed 1 tick before din is latched
   input  wire [(8*NBYTES-1):0] din,   // data to be sent to master
   output reg  [(8*NBYTES-1):0] dout,  // data received from master
 
@@ -65,7 +66,7 @@ always @(posedge clk)
   end
 
 always @(posedge clk)
-  if(start)
+  if(din_latch)
     miso <= din[(8*NBYTES-1)];
   else if(~busy)
 `ifdef SIM
@@ -77,7 +78,10 @@ always @(posedge clk)
     miso <= dout[(8*NBYTES-1)];
 
 always @(posedge clk)
-  if(start)
+  din_latch <= start | done;
+
+always @(posedge clk)
+  if(din_latch)
     dout<= din; // latch data to send
   else if(busy & sample)
     dout   <= {dout[(8*NBYTES-2):0], mosi_x};

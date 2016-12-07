@@ -59,11 +59,11 @@ task spi_shift;
     dshift <= mval;
     select <= 1;
 
-    @(posedge start);
+    while(~start) @(posedge clk);
     din    <= sval;
     mosi   <= dshift[(8*NBYTES-1)];
 
-    @(negedge start);
+    while(start) @(posedge clk);
     din    <= {2*NBYTES{1'bx}};
 
     for(i=0; i<8*NBYTES; i=i+1)
