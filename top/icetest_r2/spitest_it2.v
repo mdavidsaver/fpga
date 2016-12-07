@@ -52,34 +52,11 @@ localparam S_IDLE = 0,
 reg [2:0] state = 0;
 
 wire err = state==S_ERR;
-//reg [7:0] ram [0:255];
+reg [7:0] ram [0:255];
 reg [7:0] ramptr;
-
-
-reg WE, RE;
-wire [15:0] RDATA;
-
-SB_RAM40_4K #(
-    .READ_MODE(1), // 512 x 8
-    .WRITE_MODE(1)
-) ram (
-    .RCLK(clk),
-    .WCLK(clk),
-    .RCLKE(1),
-    .WCLKE(1),
-    .RE(RE),
-    .WE(WE),
-    .RADDR({3'h0, ramptr}),
-    .WADDR({3'h0, ramptr}),
-    .RDATA(RDATA),
-    .WDATA({8'h00, din}),
-    .MASK(0) // unused
-);
 
 always @(posedge clk)
   begin
-  RE <= 0;
-  WE <= 0;
   if(mselect)
   begin
     state  <= S_IDLE;
@@ -115,9 +92,7 @@ always @(posedge clk)
       state  <= S_WRITE_DATA;
     end
     S_WRITE_DATA:begin
-      WE <= 1;
-      //dout   <= ram[ramptr];
-      dout   <= RDATA[7:0];
+      dout   <= ram[ramptr];
       ramptr <= ramptr + 1;
       state  <= S_WRITE_DATA;
     end
@@ -127,8 +102,7 @@ always @(posedge clk)
       state  <= S_READ_DATA;
     end
     S_READ_DATA:begin
-      RE <= 1;
-      //ram[ramptr] <= din;
+      ram[ramptr] <= din;
       dout   <= 8'hee;
       ramptr <= ramptr + 1;
       state  <= S_READ_DATA;
