@@ -1,9 +1,14 @@
 /* SPI busy slave
  *
  * Protocol
- * 1. 'start' indicates that master has selected.  din should be stable.
- * 2. 'done' indicates that a frame has been shifted.
- *    din may be changed, and dout inspected.
+ *  When din_latch==1 then din will be latched on the next tick.
+ *  When done==1 then dout is stable
+ *
+ *  When a transfer starts din_latch==1 and done==0 signals the start
+ *  of the first byte
+ *  Subsequent bytes have din_latch==1 and done==1.
+ *
+ * done==1 will always conincide with din_latch==1
  */
 module spi_slave(
   input wire        clk,   // sample clock.  must be at least 2x mclk
@@ -17,12 +22,11 @@ module spi_slave(
   input  wire       mosi,
   output reg        miso,
 
-  output reg        din_latch,        // pulsed 1 tick before din is latched
+  output wire       din_latch,        // pulsed 1 tick before din is latched
   input  wire [(8*NBYTES-1):0] din,   // data to be sent to master
   output reg  [(8*NBYTES-1):0] dout,  // data received from master
 
   output wire       busy,
-  output wire       start, // pulsed when 'select' rises
   output reg        done   // pulsed after each byte
 );
 
@@ -32,7 +36,7 @@ reg [3:0] select_x;
 always @(posedge clk)
   select_x <= {select_x[2:0], select};
 
-assign start = select_x==4'b0011;
+wire start = select_x==4'b0011;
 
 reg [1:0] mclk_x;
 always @(posedge clk)
@@ -53,8 +57,14 @@ always @(posedge clk)
 reg [(3+NBYTES):0] cnt = 0;
 assign busy = start | (cnt!=0 & select_x[0]);
 
+assign din_latch = start | done;
+
+reg latched;
 always @(posedge clk)
-  if(start) begin
+  latched   <= din_latch;
+
+always @(posedge clk)
+  if(latched) begin
     cnt <= 16*NBYTES;
     done<= 0;
   end else if(~busy) begin
@@ -66,7 +76,7 @@ always @(posedge clk)
   end
 
 always @(posedge clk)
-  if(din_latch)
+  if(latched)
     miso <= din[(8*NBYTES-1)];
   else if(~busy)
 `ifdef SIM
@@ -78,10 +88,7 @@ always @(posedge clk)
     miso <= dout[(8*NBYTES-1)];
 
 always @(posedge clk)
-  din_latch <= start | done;
-
-always @(posedge clk)
-  if(din_latch)
+  if(latched)
     dout<= din; // latch data to send
   else if(busy & sample)
     dout   <= {dout[(8*NBYTES-2):0], mosi_x};

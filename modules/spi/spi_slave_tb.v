@@ -19,7 +19,6 @@ reg select = 0, cpol = 0, cpha = 0;
 reg [(8*NBYTES-1):0] din;
 wire [(8*NBYTES-1):0] dout;
 reg [(8*NBYTES-1):0] dshift;
-wire start, done, busy;
 
 reg mclk = 0, mosi = 0;
 wire miso;
@@ -36,11 +35,7 @@ spi_slave #(.NBYTES(NBYTES)) D(
   .miso(miso),
 
   .din(din),
-  .dout(dout),
-
-  .start(start),
-  .done(done),
-  .busy(busy)
+  .dout(dout)
 );
 
 integer i;
@@ -59,11 +54,11 @@ task spi_shift;
     dshift <= mval;
     select <= 1;
 
-    while(~start) @(posedge clk);
+    while(~D.din_latch) @(posedge clk);
     din    <= sval;
     mosi   <= dshift[(8*NBYTES-1)];
 
-    while(start) @(posedge clk);
+    while(D.din_latch) @(posedge clk);
     din    <= {2*NBYTES{1'bx}};
 
     for(i=0; i<8*NBYTES; i=i+1)
@@ -82,9 +77,9 @@ task spi_shift;
         dshift <= {dshift[(8*NBYTES-2):0], miso};
     end
 
-    while(~done) @(posedge clk);
+    while(~D.done) @(posedge clk);
 
-    `ASSERT_EQUAL(0, busy, "busy")
+    `ASSERT_EQUAL(0, D.busy, "busy")
 
     `ASSERT_EQUAL(sval, dshift, "to master from slave")
     `ASSERT_EQUAL(mval, dout, "from master to slave")
