@@ -56,8 +56,7 @@ always @(posedge clk)
   if(start) begin
     cnt <= 16*NBYTES;
     done<= 0;
-    dout<= din; // latch data to send
-  end else if(!busy) begin
+  end else if(~busy) begin
     cnt <= 0;
     done<= 0;
   end else if(mclk_tick) begin
@@ -68,7 +67,7 @@ always @(posedge clk)
 always @(posedge clk)
   if(start)
     miso <= din[(8*NBYTES-1)];
-  else if(!busy)
+  else if(~busy)
 `ifdef SIM
     miso <= 1'bz;
 `else
@@ -78,7 +77,9 @@ always @(posedge clk)
     miso <= dout[(8*NBYTES-1)];
 
 always @(posedge clk)
-  if(busy & sample)
+  if(start)
+    dout<= din; // latch data to send
+  else if(busy & sample)
     dout   <= {dout[(8*NBYTES-2):0], mosi_x};
 
 endmodule
