@@ -1,0 +1,13 @@
+set_io clk 63
+
+set_io mselect 49
+set_io mclk 48
+set_io mosi 46
+set_io miso 45
+
+set_io d_mselect 15
+set_io d_mclk 16
+set_io d_mosi 18
+set_io d_miso 19
+
+set_io err 25
