@@ -19,7 +19,7 @@ module spi_master(
 
   input  wire [(8*NBYTES-1):0] din,   // data to be sent by master
   output reg  [(8*NBYTES-1):0] dout,  // data received by master
-  input  wire       start, // toggle high to start transfer
+  input  wire       start, // toggle high to start transfer, lower once busy==1
   output wire       busy   // high while transfer in progress
                            // rising edge when 'start' toggled,
                            // falling edge when transfer complete

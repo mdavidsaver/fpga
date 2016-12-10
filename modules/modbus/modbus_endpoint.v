@@ -2,14 +2,11 @@
  *
  * Handle functions
  *  0x3 Read holding registers
- *    -> | addr | 0x02 | ADDR[2] | CNT[2] | CRC[2] |
- *    <- | addr | 0x02 | bytes | body[0-254] | CRC[2] |
+ *    -> | addr | 0x03 | ADDR[2] | CNT[2] | CRC[2] |
+ *    <- | addr | 0x03 | bytes | body[0-254] | CRC[2] |
  *  0x6 Write single register
- *    -> | addr | 0x02 | ADDR[2] | VAL[2] | CRC[2] |
- *    <- | addr | 0x02 | ADDR[2] | VAL[2] | CRC[2] |
- *
- * All other functions trigger exception reply
- *    <- | addr | 0x8x | code | CRC[2] |
+ *    -> | addr | 0x06 | ADDR[2] | VAL[2] | CRC[2] |
+ *    <- | addr | 0x06 | ADDR[2] | VAL[2] | CRC[2] |
  *
  * CRC computed over entire frame, including slave address
  *
