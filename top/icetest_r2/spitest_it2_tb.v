@@ -1,7 +1,7 @@
 module test;
 `include "utest.vlib"
 
-`TEST_PRELUDE(29)
+`TEST_PRELUDE(44)
 
 `TEST_CLOCK(clk,1);
 
@@ -18,12 +18,21 @@ always @(posedge clk)
 reg mselect = 1; // active low
 wire mclk, mosi, miso;
 
+reg [3:0] gpio_dir = 4'h0;
+reg [3:0] gpio_data;
+wire [3:0] gpio;
+assign gpio[0] = gpio_dir[0] ? gpio_data[0] : 1'bz;
+assign gpio[1] = gpio_dir[1] ? gpio_data[1] : 1'bz;
+assign gpio[2] = gpio_dir[2] ? gpio_data[2] : 1'bz;
+assign gpio[3] = gpio_dir[3] ? gpio_data[3] : 1'bz;
+
 top DUT(
   .clk(clk),
   .mselect(mselect),
   .mclk(mclk),
   .mosi(mosi),
-  .miso(miso)
+  .miso(miso),
+  .gpio(gpio)
 );
 
 reg [7:0] din;
@@ -66,27 +75,25 @@ begin
   #10 @(posedge clk);
   mselect <= 0;
 
-  $display("Command echo");
+  $display("# Command echo");
   #6 spiout(8'h11);
   `ASSERT_EQUAL(DUT.state, DUT.S_IDLE, "Accepted echo command")
+  `ASSERT_EQUAL(DRV.dout, 8'hxx, "Echo cmd ack")
 
-  $display("Command byte 0x42");
+  $display("# Command byte 0x42");
   #10 spiout(8'h42);
   `ASSERT_EQUAL(DUT.state, DUT.S_ECHO, "Accepted echo 1")
-
   `ASSERT_EQUAL(DRV.dout, 8'h22, "Echo cmd ack")
 
-  $display("Command byte 0x43");
+  $display("# Command byte 0x43");
   #10 spiout(8'h43);
   `ASSERT_EQUAL(DUT.state, DUT.S_ECHO, "Accepted echo 2")
-
   `ASSERT_EQUAL(DRV.dout, 8'h42, "Byte 1")
 
-  $display("Command byte 0x43");
+  $display("# Command byte 0x43");
   #10 spiout(8'h44);
   `ASSERT_EQUAL(DUT.state, DUT.S_ECHO, "Accepted echo 2")
-
-  `ASSERT_EQUAL(DRV.dout, 8'h43, "Byte 2)
+  `ASSERT_EQUAL(DRV.dout, 8'h43, "Byte 2")
 
   mselect <= 1;
   #10 @(posedge clk);
@@ -94,7 +101,7 @@ begin
   
   mselect <= 0;
 
-  $display("Command mem write");
+  $display("# Command mem write");
   #6 spiout(8'h12);
   `ASSERT_EQUAL(DUT.state, DUT.S_IDLE, "Accepted write command")
   #10 spiout(8'h04);
@@ -116,7 +123,7 @@ begin
 
   mselect <= 0;
 
-  $display("Command mem read");
+  $display("# Command mem read");
   #6 spiout(8'h13);
   `ASSERT_EQUAL(DUT.state, DUT.S_IDLE, "Accepted read command")
   #10 spiout(8'h03);
@@ -140,6 +147,57 @@ begin
   mselect <= 1;
   #10 @(posedge clk);
   `ASSERT_EQUAL(DUT.state, DUT.S_IDLE, "IDLE")
+
+  $display("# Test GPIO");
+
+  `ASSERT_EQUAL(gpio, 4'bz, "gpio")  
+  gpio_dir <= 4'b0001;
+  gpio_data <= 4'h0;
+  #6
+  `ASSERT_EQUAL(gpio, 4'bzzz0, "gpio")  
+
+  mselect <= 0;
+  $display("# Read GPIO");
+
+  #6 spiout(8'h15);
+  `ASSERT_EQUAL(DUT.state, DUT.S_IDLE, "Accepted data command")
+  #6 spiout(8'h00);
+  `ASSERT_EQUAL(DUT.state, DUT.S_GPIO_DATA, "Accepted data command")
+  `ASSERT_EQUAL(DRV.dout, 8'h26, "gpio data ack")
+  #6 spiout(8'h00);
+  `ASSERT_EQUAL(DRV.dout, 8'b0000zzz0, "gpio low")
+  gpio_data <= 1;
+  #6 spiout(8'h00);
+  `ASSERT_EQUAL(DRV.dout, 8'b0000zzz1, "gpio high")
+
+  #10 @(posedge clk);
+  mselect <= 1;
+  gpio_dir <= 0;
+  #6
+  `ASSERT_EQUAL(gpio, 4'hz, "gpio")  
+
+  mselect <= 0;
+  $display("# Set GPIO out");
+  
+  #6 spiout(8'h14);
+  `ASSERT_EQUAL(DUT.state, DUT.S_IDLE, "Accepted data command")
+  #6 spiout(8'h01);
+  `ASSERT_EQUAL(DUT.state, DUT.S_GPIO_DIR, "Accepted dir command")
+  `ASSERT_EQUAL(DRV.dout, 8'h25, "gpio data ack")
+
+  #10 @(posedge clk);
+  mselect <= 1;
+  `ASSERT_EQUAL(gpio, 4'bzzz0, "gpio")  
+
+  #10 @(posedge clk);
+  mselect <= 0;
+  $display("# Write GPIO");
+  #6 spiout(8'h15);
+  #6 spiout(8'h01);
+  #10 @(posedge clk);
+  mselect <= 1;
+
+  `ASSERT_EQUAL(gpio, 4'bzzz1, "gpio")  
 
   #8 `TEST_DONE
 end

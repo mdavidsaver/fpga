@@ -13,6 +13,7 @@ add_isim(test_spitest_it2
     spitest_it2.v
     ${PROJECT_SOURCE_DIR}/modules/spi/spi_slave.v
     ${PROJECT_SOURCE_DIR}/modules/spi/spi_master.v
+    ${YOSYS_SHARE}/ice40/cells_sim.v
   ARGS
     -I${PROJECT_SOURCE_DIR}/util
   DEPENDS

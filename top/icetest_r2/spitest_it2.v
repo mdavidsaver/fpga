@@ -10,10 +10,7 @@ module top(
   output err,
   
   // debug
-  output d_mselect,
-  output d_mclk,
-  output d_mosi,
-  output d_miso
+  inout [3:0] gpio
 );
 
 `ifdef SIM
@@ -22,10 +19,33 @@ localparam UDF = 8'hxx;
 localparam UDF = 8'hff;
 `endif
 
-assign d_mselect = mselect;
-assign d_mclk    = mclk;
-assign d_mosi    = mosi;
-assign d_miso    = miso;
+reg [3:0] gpio_dir = 4'h0;
+reg [3:0] gpio_out = 4'h0;
+wire [3:0] gpio_in;
+
+genvar i;
+generate
+    for(i=0; i<=3; i=i+1) begin
+    SB_IO #(
+        // input registered
+        // output registerd, out enable registered
+        .PIN_TYPE(6'b110101)
+    ) gpio_pin (
+        .PACKAGE_PIN(gpio[i]),
+        .CLOCK_ENABLE(1'b1),
+        // input
+        .INPUT_CLK(clk),
+        .D_IN_0(gpio_in[i]),
+        // output
+        .OUTPUT_CLK(clk),
+        .OUTPUT_ENABLE(gpio_dir[i]),
+        .D_OUT_0(gpio_out[i]),
+        // unused
+        .LATCH_INPUT_VALUE(1'b0),
+        .D_OUT_1(1'b0)
+    );
+    end
+endgenerate
 
 wire [7:0] din; // from master
 reg [7:0] dout; // to master
@@ -54,8 +74,10 @@ localparam S_IDLE = 0,
            S_WRITE_ADDR = 3,
            S_WRITE_DATA = 4,
            S_READ_ADDR = 5,
-           S_READ_DATA = 6;
-reg [2:0] state = 0;
+           S_READ_DATA = 6,
+           S_GPIO_DIR = 7,
+           S_GPIO_DATA = 8;
+reg [3:0] state = 0;
 
 wire err = state==S_ERR;
 reg [7:0] ram [0:255];
@@ -72,18 +94,32 @@ always @(posedge clk)
     S_IDLE:begin
       case(din)
       8'h11:begin // command echo
+        $display("# CMD ECHO");
         state <= S_ECHO;
         dout  <= 8'h22;
       end
       8'h12:begin // command ram write
+        $display("# CMD WRITE");
         state <= S_WRITE_ADDR;
         dout  <= 8'h23;
       end
       8'h13:begin // command ram read
+        $display("# CMD READ");
         state <= S_READ_ADDR;
         dout  <= 8'h24;
       end
+      8'h14:begin // GPIO direction
+        $display("# CMD DIR");
+        state <= S_GPIO_DIR;
+        dout  <= 8'h25;
+      end
+      8'h15:begin // GPIO data
+        $display("# CMD DATA");
+        state <= S_GPIO_DATA;
+        dout  <= 8'h26;
+      end
       default:begin
+        $display("# CMD ???");
         state <= S_ERR;
         dout <= UDF;
       end
@@ -118,6 +154,18 @@ always @(posedge clk)
       dout   <= ram[ramptr];
       ramptr <= ramptr + 1;
       state  <= S_READ_DATA;
+    end
+    S_GPIO_DIR:begin
+      $display("# GPIO dir <= %x", din[0]);
+      gpio_dir <= din[3:0];
+      dout     <= UDF;
+      state    <= S_GPIO_DIR;
+    end
+    S_GPIO_DATA:begin
+      $display("# GPIO data <= %x => %x", din[0], gpio);
+      gpio_out <= din[3:0];
+      dout     <= {4'h0, gpio_in};
+      state    <= S_GPIO_DATA;
     end
     default:begin // S_ERR
       dout <= 8'hff;
