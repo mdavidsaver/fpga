@@ -107,11 +107,11 @@ static inline void setup_gpio(void)
     SPCR = 0;
 }
 
-static inline void spi_byte(uint8_t oval)
+static inline uint8_t spi_byte(uint8_t oval)
 {
     SPDR = oval;
     loop_until_bit_is_set(SPSR, SPIF);
-    //return SPDR;
+    return SPDR;
 }
 
 static inline uint8_t spi_bit(uint8_t oval)
@@ -164,9 +164,9 @@ int main(void)
 
     setupuart();
 
-    /* switch on drivers for SCK=1, MOSI=0, SS=0, and CRST=1 */
+    /* switch on drivers for SCK=1, MOSI=0, SS=1, and CRST=1 */
     /* MISO and CDNE remain inputs */
-    PORT_SPI = _BV(PORT_SCLK) | _BV(PORT_CRST);
+    PORT_SPI = _BV(PORT_SCLK) | _BV(PORT_CRST) | _BV(PORT_SS);
     DDR_SPI = _BV(DD_SCLK) | _BV(DD_MOSI) | _BV(DD_SS) | _BV(DD_CRST);
 
     /* SPI engine disabled */
@@ -185,6 +185,8 @@ int main(void)
         case 0x10: /* reset ice40 and prepare for programming */
             uart_tx(cmd);
 
+            /* SS=0 */
+            PORT_SPI &= ~_BV(PORT_SS);
             /* CRST=0 */
             PORT_SPI &= ~_BV(PORT_CRST);
 
@@ -222,14 +224,31 @@ int main(void)
 
         case 0x14: /* end program mode */
             uart_tx(cmd);
-            setup_gpio();
-            PORT_SPI = _BV(PORT_SCLK) | _BV(PORT_CRST);
+            setup_spi();
+            /* SCLK=1, CRST=1, SS=1, MOSI=0 */
+            PORT_SPI = _BV(PORT_SCLK) | _BV(PORT_CRST) | _BV(PORT_SS);
             uart_tx(0x22);
             break;
 
-        case 0x15:
+        case 0x15: /* poll CDONE */
             uart_tx(cmd);
             uart_tx((PIN_SPI&_BV(PIN_CDNE))?0xd0:0xbd);
+            break;
+
+        case 0x16: /* SPI transfer in/out */
+            setup_spi();
+            uart_tx(cmd);
+            uart_tx(spi_byte(val));
+            break;
+
+        case 0x17: /* SPI SS */
+            uart_tx(cmd);
+            if(val&1)
+                PORT_SPI |= _BV(PORT_SS); /* SS=1 */
+            else
+                PORT_SPI &= ~_BV(PORT_SS); /* SS=0 */
+            uart_tx(val&1u);
+            break;
 
         case 0x42:
             uart_tx(cmd);
