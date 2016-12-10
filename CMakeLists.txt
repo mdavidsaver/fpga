@@ -235,36 +235,38 @@ message(STATUS "AVROBJCOPY_EXECUTABLE=${AVROBJCOPY_EXECUTABLE}")
 message(STATUS "AVRDUDE_EXECUTABLE=${AVRDUDE_EXECUTABLE}")
 
 if(AVRGCC_EXECUTABLE AND AVROBJCOPY_EXECUTABLE)
-  set(AVR_BSP "arduino-uno")
-  set(AVR_DIR ${CMAKE_CURRENT_BINARY_DIR}/${AVR_BSP})
-  message(STATUS "AVR ${AVR_BSP} in ${AVR_DIR}")
-  file(MAKE_DIRECTORY ${AVR_DIR})
+  foreach(AVR_BSP arduino-uno)
+    #set(AVR_BSP "arduino-uno")
+    set(AVR_DIR ${CMAKE_CURRENT_BINARY_DIR}/${AVR_BSP})
+    message(STATUS "AVR ${AVR_BSP} in ${AVR_DIR}")
+    file(MAKE_DIRECTORY ${AVR_DIR})
 
-  configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/toolchains/${AVR_BSP}.toolchain.in
-    ${AVR_DIR}/toolchain.cmake
-    @ONLY
-  )
+    configure_file(
+      ${CMAKE_CURRENT_SOURCE_DIR}/cmake/toolchains/${AVR_BSP}.toolchain.in
+      ${AVR_DIR}/toolchain.cmake
+      @ONLY
+    )
 
-  execute_process(
-    COMMAND ${CMAKE_COMMAND}
-      -DCMAKE_TOOLCHAIN_FILE=toolchain.cmake
-      -DCMAKE_MODULE_PATH=${CMAKE_CURRENT_SOURCE_DIR}/cmake
-      ${CMAKE_CURRENT_SOURCE_DIR}/avr
-    WORKING_DIRECTORY ${AVR_DIR}
-    RESULT_VARIABLE AVR_OK
-  )
+    execute_process(
+      COMMAND ${CMAKE_COMMAND}
+        -DCMAKE_TOOLCHAIN_FILE=toolchain.cmake
+        -DCMAKE_MODULE_PATH=${CMAKE_CURRENT_SOURCE_DIR}/cmake
+        ${CMAKE_CURRENT_SOURCE_DIR}/avr
+      WORKING_DIRECTORY ${AVR_DIR}
+      RESULT_VARIABLE AVR_OK
+    )
 
-  if(AVR_OK EQUAL 0)
-    message(STATUS "Build for AVR ${AVR_BSP}")
-    set(CAN_AVR 1)
-    if(CMAKE_MAKE_PROGRAM)
-      add_custom_target(all-${AVR_BSP} ALL
-        COMMAND ${CMAKE_MAKE_PROGRAM} all
-        WORKING_DIRECTORY ${AVR_DIR}
-      )
+    if(AVR_OK EQUAL 0)
+      message(STATUS "Build for AVR ${AVR_BSP}")
+      set(CAN_AVR 1)
+      if(CMAKE_MAKE_PROGRAM)
+        add_custom_target(all-${AVR_BSP} ALL
+          COMMAND ${CMAKE_MAKE_PROGRAM} all
+          WORKING_DIRECTORY ${AVR_DIR}
+        )
+      endif()
     endif()
-  endif()
+  endforeach()
 endif()
 
 enable_testing()

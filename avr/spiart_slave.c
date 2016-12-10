@@ -44,7 +44,9 @@ char hexchars[] = "0123456789ABCDEF";
 int main(void)
 {
     wdt_disable();
+#ifdef __AVR_ATmega328P__
     MCUSR &= ~_BV(WDRF);
+#endif
 
     setupuart();
 
