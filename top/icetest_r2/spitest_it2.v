@@ -16,6 +16,12 @@ module top(
   output d_miso
 );
 
+`ifdef SIM
+localparam UDF = 8'hxx;
+`else
+localparam UDF = 8'hff;
+`endif
+
 assign d_mselect = mselect;
 assign d_mclk    = mclk;
 assign d_mosi    = mosi;
@@ -23,7 +29,7 @@ assign d_miso    = miso;
 
 wire [7:0] din; // from master
 reg [7:0] dout; // to master
-wire done;
+wire latch;
 
 spi_slave D(
   .clk(clk),
@@ -39,7 +45,7 @@ spi_slave D(
   .din(dout),
   .dout(din),
   
-  .done(done)
+  .done(latch)
 );
 
 localparam S_IDLE = 0,
@@ -60,9 +66,9 @@ always @(posedge clk)
   if(mselect)
   begin
     state  <= S_IDLE;
-    dout   <= 8'hab;
+    dout   <= UDF;
     ramptr <= 0;
-  end else if(done) case(state)
+  end else if(latch) case(state)
     S_IDLE:begin
       case(din)
       8'h11:begin // command echo
@@ -79,7 +85,7 @@ always @(posedge clk)
       end
       default:begin
         state <= S_ERR;
-        dout <= 8'hff;
+        dout <= UDF;
       end
       endcase
     end
@@ -87,23 +93,29 @@ always @(posedge clk)
       dout <= din;
     end
     S_WRITE_ADDR:begin
+      $display("# Set WADDR %x", din);
       ramptr <= din;
-      dout   <= 8'hee;
+      dout   <= UDF;
       state  <= S_WRITE_DATA;
     end
     S_WRITE_DATA:begin
-      dout   <= ram[ramptr];
+      $display("# WRITE ram[%x] = %x", ramptr, din);
+      ram[ramptr] <= din;
       ramptr <= ramptr + 1;
+      dout   <= UDF;
       state  <= S_WRITE_DATA;
     end
     S_READ_ADDR:begin
+      $display("# Set RADDR %x", din);
       ramptr <= din;
-      dout   <= 8'hee;
+      // setup of dout<=ram[din] adds some complexity, so make master read once more
+      // to get first byte
+      dout   <= UDF;
       state  <= S_READ_DATA;
     end
     S_READ_DATA:begin
-      ram[ramptr] <= din;
-      dout   <= 8'hee;
+      $display("# READ ram[%x] -> %x", ramptr, ram[ramptr]);
+      dout   <= ram[ramptr];
       ramptr <= ramptr + 1;
       state  <= S_READ_DATA;
     end
