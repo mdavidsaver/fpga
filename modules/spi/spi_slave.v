@@ -1,96 +1,133 @@
-/* SPI busy slave
+/* SPI busy slave Mode 3 (CPHA=1 CPOL=1)
+ *
+ * mclk, mosi, and select should be stabalized w/ an external DFF
  *
  * Protocol
- *  When din_latch==1 then din will be latched on the next tick.
- *  When done==1 then dout is stable
- *
- *  When a transfer starts din_latch==1 and done==0 signals the start
- *  of the first byte
- *  Subsequent bytes have din_latch==1 and done==1.
- *
- * done==1 will always conincide with din_latch==1
+ *  When request==1 then dout is stable and recipient should set din
+ *  immediately.
  */
 module spi_slave(
   input wire        clk,   // sample clock.  must be at least 2x mclk
-
-  input  wire       cpol,  // clock polarity (idle level)
-  input  wire       cpha,  // clock phase. 0 - sample on rising edge,
-                           //              1 - sample on falling edge
 
   input  wire       select,// chip select (active high)
   input  wire       mclk,
   input  wire       mosi,
   output reg        miso,
 
-  output wire       din_latch,        // pulsed 1 tick before din is latched
-  input  wire [(8*NBYTES-1):0] din,   // data to be sent to master
-  output reg  [(8*NBYTES-1):0] dout,  // data received from master
+  input  wire [7:0] din,   // data to be sent to master
+  output reg  [7:0] dout,  // data received from master
 
-  output wire       busy,
-  output reg        done   // pulsed after each byte
+  output reg        request
 );
 
-parameter NBYTES = 1;
-
-reg [3:0] select_x;
-always @(posedge clk)
-  select_x <= {select_x[2:0], select};
-
-wire start = select_x==4'b0011;
-
-reg [1:0] mclk_x;
-always @(posedge clk)
-  mclk_x <= {mclk_x[0], mclk};
-
-wire mclk_p = mclk_x==2'b01, // rising edge
-     mclk_n = mclk_x==2'b10, // falling edge
-     mclk_tick = mclk_p | mclk_n,
-     mclk_r = cpol==0 ? mclk_p : mclk_n, // inactive -> active
-     mclk_f = cpol==0 ? mclk_n : mclk_p, // active -> inactive
-     sample = cpha==0 ? mclk_r : mclk_f,
-     setup  = cpha==0 ? mclk_f : mclk_r;
-
-reg mosi_x;
-always @(posedge clk)
-  mosi_x <= mosi;
-
-reg [(3+NBYTES):0] cnt = 0;
-assign busy = start | (cnt!=0 & select_x[0]);
-
-assign din_latch = start | done;
-
-reg latched;
-always @(posedge clk)
-  latched   <= din_latch;
-
-always @(posedge clk)
-  if(latched) begin
-    cnt <= 16*NBYTES;
-    done<= 0;
-  end else if(~busy) begin
-    cnt <= 0;
-    done<= 0;
-  end else if(mclk_tick) begin
-    cnt <= cnt-1;
-    done<= cnt==1;
-  end
-
-always @(posedge clk)
-  if(latched)
-    miso <= din[(8*NBYTES-1)];
-  else if(~busy)
 `ifdef SIM
-    miso <= 1'bz;
+localparam UDF = 1'bx;
 `else
-    miso <= miso;
+localparam UDF = 1'b0;
 `endif
-  else if(setup)
-    miso <= dout[(8*NBYTES-1)];
+
+reg mclk_p;
+always @(posedge clk)
+  mclk_p <= mclk;
+wire [1:0] mclk_x = {mclk_p, mclk};
+
+wire setup = mclk_x==2'b10,
+     sample= mclk_x==2'b01;
+
+reg req_p;
+always @(posedge clk)
+  req_p <= request;
+
+localparam S_IDLE = 0,
+           S_SETUP = 9,
+           S_BIT7 = 1,
+           S_BIT6 = 2,
+           S_BIT5 = 3,
+           S_BIT4 = 4,
+           S_BIT3 = 5,
+           S_BIT2 = 6,
+           S_BIT1 = 7,
+           S_BIT0 = 8;
+
+reg [3:0] state;
 
 always @(posedge clk)
-  if(latched)
-    dout<= din; // latch data to send
-  else if(busy & sample)
-    dout   <= {dout[(8*NBYTES-2):0], mosi_x};
+  begin
+    request <= 0;
+    if(~select)
+    begin
+      state <= S_IDLE;
+`ifdef SIM
+      dout <= 8'hxx;
+`endif
+    end else case(state)
+    S_IDLE:if(select) begin
+      request <= 1;
+      state <= S_SETUP;
+      end
+    S_SETUP:if(req_p) begin
+        // latch into shift register
+        dout <= din;
+        state <= S_BIT7;
+      end
+    S_BIT7:
+      if(setup) begin
+        miso <= dout[7];
+      end else if(sample) begin
+        dout[7] <= mosi;
+        state <= S_BIT6;
+      end
+    S_BIT6:
+      if(setup) begin
+        miso <= dout[6];
+      end else if(sample) begin
+        dout[6] <= mosi;
+        state <= S_BIT5;
+      end
+    S_BIT5:
+      if(setup) begin
+        miso <= dout[5];
+      end else if(sample) begin
+        dout[5] <= mosi;
+        state <= S_BIT4;
+      end
+    S_BIT4:
+      if(setup) begin
+        miso <= dout[4];
+      end else if(sample) begin
+        dout[4] <= mosi;
+        state <= S_BIT3;
+      end
+    S_BIT3:
+      if(setup) begin
+        miso <= dout[3];
+      end else if(sample) begin
+        dout[3] <= mosi;
+        state <= S_BIT2;
+      end
+    S_BIT2:
+      if(setup) begin
+        miso <= dout[2];
+      end else if(sample) begin
+        dout[2] <= mosi;
+        state <= S_BIT1;
+      end
+    S_BIT1:
+      if(setup) begin
+        miso <= dout[1];
+      end else if(sample) begin
+        dout[1] <= mosi;
+        state <= S_BIT0;
+      end
+    S_BIT0:
+      if(setup) begin
+        miso <= dout[0];
+      end else if(sample) begin
+        dout[0] <= mosi;
+        request <= 1;
+        state <= S_SETUP;
+      end
+    endcase
+  end
 
 endmodule

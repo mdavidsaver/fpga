@@ -2,32 +2,23 @@ module test;
 
 `include "utest.vlib"
 
-`TEST_PRELUDE(24)
+`TEST_PRELUDE(12)
 
-`TEST_CLOCK(clk,1);
+`TEST_CLOCK(clk,4);
 
 `TEST_TIMEOUT(6000)
 
-localparam NBYTES = 1;
 
-reg [3:0] sendclk_cnt = 0;
-always @(posedge clk)
-  sendclk_cnt <= sendclk_cnt[2:0]+1;
-wire sendclk = sendclk_cnt[3];
+reg select = 0, cpol = 1, cpha = 1;
+reg [7:0] din;
+wire [7:0] dout;
+reg [7:0] dshift;
 
-reg select = 0, cpol = 0, cpha = 0;
-reg [(8*NBYTES-1):0] din;
-wire [(8*NBYTES-1):0] dout;
-reg [(8*NBYTES-1):0] dshift;
+reg mclk = 1, mosi = 0;
+wire miso, request;
 
-reg mclk = 0, mosi = 0;
-wire miso;
-
-spi_slave #(.NBYTES(NBYTES)) D(
+spi_slave D(
   .clk(clk),
-
-  .cpol(cpol),
-  .cpha(cpha),
 
   .select(select),
   .mclk(mclk),
@@ -35,58 +26,48 @@ spi_slave #(.NBYTES(NBYTES)) D(
   .miso(miso),
 
   .din(din),
-  .dout(dout)
+  .dout(dout),
+
+  .request(request)
 );
 
+reg [7:0] req_data [0:2];
+reg [7:0] recv_data [0:2];
+reg [1:0] requested = 0;
+always @(posedge clk)
+  if(request) begin
+    $display("# SPI data request");
+    din         <= req_data[0];
+    req_data[0] <= req_data[1];
+    req_data[1] <= req_data[2];
+    req_data[2] <= 8'hxx;
+    requested <= requested+1;
+    recv_data[0] <= dout;
+    recv_data[1] <= recv_data[0];
+    recv_data[2] <= recv_data[1];
+  end else
+    din <= 8'hxx;
+
 integer i;
+reg [7:0] outdata;
 
-task spi_shift;
-  input [(8*NBYTES-1):0] mval;
-  input [(8*NBYTES-1):0] sval;
+task spi_master;
+  input  [7:0] ival;
   begin
-    $display("spi_shift mval=%x sval=%x", mval, sval);
+    $display("# spi_master <== %x @ %d", ival, $abstime);
+    outdata <= 8'hxx;
 
-    if(mclk!=cpol) begin
-      mclk   <= cpol;
-      @(posedge sendclk);
-    end
-
-    dshift <= mval;
-    select <= 1;
-
-    while(~D.din_latch) @(posedge clk);
-    din    <= sval;
-    mosi   <= dshift[(8*NBYTES-1)];
-
-    while(D.din_latch) @(posedge clk);
-    din    <= {2*NBYTES{1'bx}};
-
-    for(i=0; i<8*NBYTES; i=i+1)
+    for(i=7; i>=0; i=i-1)
     begin
-      @(posedge sendclk);
-      mclk <= ~cpol;
-      if(cpha==0)
-        dshift <= {dshift[(8*NBYTES-2):0], miso};
-      else
-        mosi   <= dshift[(8*NBYTES-1)];
-      @(posedge sendclk);
-      mclk <= cpol;
-      if(cpha==0)
-        mosi   <= dshift[(8*NBYTES-1)];
-      else
-        dshift <= {dshift[(8*NBYTES-2):0], miso};
+      #16
+      mclk <= 0;
+      mosi <= ival[i];
+      #16
+      mclk <= 1;
+      outdata[i] = miso;
     end
 
-    while(~D.done) @(posedge clk);
-
-    `ASSERT_EQUAL(0, D.busy, "busy")
-
-    `ASSERT_EQUAL(sval, dshift, "to master from slave")
-    `ASSERT_EQUAL(mval, dout, "from master to slave")
-
-    select <= 0;
-    @(posedge sendclk);
-    @(posedge sendclk);
+    $display("# spi_master ==> %x @ %d", outdata, $abstime);
   end
 endtask
 
@@ -94,33 +75,57 @@ initial
 begin
   `TEST_INIT(test)
 
-  cpol = 0;
-  cpha = 0;
-  #6
-  $display("config CPOL=%d CPHA=%d", cpol, cpha);
-  spi_shift(8'ha1, 8'hb2);
-  spi_shift(8'h51, 8'h62);
+  @(posedge clk);
+  $display("# check that ~select is ignored");
+  spi_master(8'hab);
+  @(posedge clk);
+  @(posedge clk);
+  @(posedge clk);
+  `ASSERT_EQUAL(outdata, 8'hxx, "junk data")
+  `ASSERT_EQUAL(requested, 0, "no request")
 
-  cpol = 1;
-  cpha = 0;
-  #6
-  $display("config CPOL=%d CPHA=%d", cpol, cpha);
-  spi_shift(8'ha1, 8'hb2);
-  spi_shift(8'h51, 8'h62);
+  @(posedge clk);
+  @(posedge clk);
+  $display("# shift a single byte");
 
-  cpol = 0;
-  cpha = 1;
-  #6
-  $display("config CPOL=%d CPHA=%d", cpol, cpha);
-  spi_shift(8'ha1, 8'hb2);
-  spi_shift(8'h51, 8'h62);
+  req_data[0] <= 8'h89;
+  req_data[1] <= 8'hxx;
+  req_data[2] <= 8'hxx;
+  select <= 1;
+  #16
+  spi_master(8'hcd);
+  `ASSERT_EQUAL(outdata, 8'h89, "sent data")
+  #16
+  select <= 0;
 
-  cpol = 1;
-  cpha = 1;
-  #6
-  $display("config CPOL=%d CPHA=%d", cpol, cpha);
-  spi_shift(8'ha1, 8'hb2);
-  spi_shift(8'h51, 8'h62);
+  #16
+  `ASSERT_EQUAL(requested, 2, "requested")
+  `ASSERT_EQUAL(recv_data[0], 8'hcd, "recv data[0]")
+  `ASSERT_EQUAL(recv_data[1], 8'hxx, "recv data[1]")
+
+  @(posedge clk);
+  @(posedge clk);
+  $display("# shift 2 bytes");
+
+  requested   <= 0;
+  req_data[0] <= 8'h12;
+  req_data[1] <= 8'h34;
+  req_data[2] <= 8'hxx;
+
+  select <= 1;
+  #16
+  spi_master(8'h56);
+  `ASSERT_EQUAL(outdata, 8'h12, "sent data")
+  spi_master(8'h78);
+  `ASSERT_EQUAL(outdata, 8'h34, "sent data")
+  #16
+  select <= 0;
+
+  #16
+  `ASSERT_EQUAL(requested, 3, "requested")
+  `ASSERT_EQUAL(recv_data[0], 8'h78, "recv data[0]")
+  `ASSERT_EQUAL(recv_data[1], 8'h56, "recv data[1]")
+  `ASSERT_EQUAL(recv_data[2], 8'hxx, "recv data[2]")
 
   #8 `TEST_DONE
 end
