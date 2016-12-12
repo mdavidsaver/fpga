@@ -5,7 +5,8 @@ Modes can be changed on the fly, or fixed (set to constant).
 
 Slave supports only Mode 3 (CPOL=1 CPHA=1).
 
-clock 'clk' must be at least 4 times faster than the SPI master's 'mclk'.
+clock 'clk' must be at least 6 times faster than the SPI master's 'mclk'.
+Tested SPI slave with clk=12 MHz and mclk=2MHz
 
 implementation details
 

@@ -96,10 +96,13 @@ static inline void setup_spi(void)
     /* ICE40 programmed in mode 3
      * SCLK idles high, setup on falling edge, sample on rising edge.
      * MSB
-     * Clock /16 SPR0=1 SPR1=0 SPI2x=0
+     * Clock /4  SPR0=0 SPR1=0 SPI2x=0
+     *       /8  SPR0=1 SPR1=0 SPI2x=1
+     *       /16 SPR0=1 SPR1=0 SPI2x=0
      *       /64 SPR0=0 SPR1=1 SPI2x=0
      */
-    SPCR =_BV(SPE) | _BV(MSTR) | _BV(CPOL) | _BV(CPHA) | _BV(SPR1);
+    SPCR = _BV(SPE) | _BV(MSTR) | _BV(CPOL) | _BV(CPHA) | _BV(SPR0);
+    SPSR = _BV(SPI2X);
 }
 
 static inline void setup_gpio(void)

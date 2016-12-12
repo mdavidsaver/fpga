@@ -7,7 +7,7 @@
  *  immediately.
  */
 module spi_slave(
-  input wire        clk,   // sample clock.  must be at least 2x mclk
+  input wire        clk,   // sample clock.  must be at least 6x mclk
 
   input  wire       select,// chip select (active high)
   input  wire       mclk,

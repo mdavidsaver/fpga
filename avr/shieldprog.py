@@ -180,8 +180,11 @@ def bittest(args):
 
         ser.cmd(0x17, 0, expect=0) # SS=0
 
-        S = randint(0,255)
-        R = ser.cmd(0x55, S)
+        for i in range(args.number):
+            S = randint(0,255)
+            R = ser.cmd(0x55, S)
+            if R!=S:
+                break
 
         ser.cmd(0x17, 1, expect=1) # SS=1
 
