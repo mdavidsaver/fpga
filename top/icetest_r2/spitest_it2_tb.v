@@ -42,8 +42,8 @@ spi_master DRV(
   .ref_clk(clk),
   .bit_clk2(clk4),
 
-  .cpol(0),
-  .cpha(0),
+  .cpol(1),
+  .cpha(1),
 
   .mclk(mclk),
   .mosi(mosi),
@@ -77,7 +77,7 @@ begin
 
   $display("# Command echo");
   #6 spiout(8'h11);
-  `ASSERT_EQUAL(DUT.state, DUT.S_IDLE, "Accepted echo command")
+  `ASSERT_EQUAL(DUT.state, DUT.S_START, "Accepted echo command")
   `ASSERT_EQUAL(DRV.dout, 8'hxx, "Echo cmd ack")
 
   $display("# Command byte 0x42");
@@ -103,7 +103,7 @@ begin
 
   $display("# Command mem write");
   #6 spiout(8'h12);
-  `ASSERT_EQUAL(DUT.state, DUT.S_IDLE, "Accepted write command")
+  `ASSERT_EQUAL(DUT.state, DUT.S_START, "Accepted write command")
   #10 spiout(8'h04);
   `ASSERT_EQUAL(DUT.state, DUT.S_WRITE_ADDR, "in addr state")
   #10 spiout(8'hab);
@@ -125,7 +125,7 @@ begin
 
   $display("# Command mem read");
   #6 spiout(8'h13);
-  `ASSERT_EQUAL(DUT.state, DUT.S_IDLE, "Accepted read command")
+  `ASSERT_EQUAL(DUT.state, DUT.S_START, "Accepted read command")
   #10 spiout(8'h03);
   `ASSERT_EQUAL(DUT.state, DUT.S_READ_ADDR, "in addr state")
   #10 spiout(8'hxx);
@@ -160,7 +160,7 @@ begin
   $display("# Read GPIO");
 
   #6 spiout(8'h15);
-  `ASSERT_EQUAL(DUT.state, DUT.S_IDLE, "Accepted data command")
+  `ASSERT_EQUAL(DUT.state, DUT.S_START, "Accepted data command")
   #6 spiout(8'h00);
   `ASSERT_EQUAL(DUT.state, DUT.S_GPIO_DATA, "Accepted data command")
   `ASSERT_EQUAL(DRV.dout, 8'h26, "gpio data ack")
@@ -180,7 +180,7 @@ begin
   $display("# Set GPIO out");
   
   #6 spiout(8'h14);
-  `ASSERT_EQUAL(DUT.state, DUT.S_IDLE, "Accepted data command")
+  `ASSERT_EQUAL(DUT.state, DUT.S_START, "Accepted data command")
   #6 spiout(8'h01);
   `ASSERT_EQUAL(DUT.state, DUT.S_GPIO_DIR, "Accepted dir command")
   `ASSERT_EQUAL(DRV.dout, 8'h25, "gpio data ack")

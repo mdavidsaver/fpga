@@ -5,7 +5,7 @@ module top(
   input mselect, // active low
   input mclk,
   input mosi,
-  output miso,
+  output miso, // TODO: Z when mselect==1
 
   output err,
   
@@ -13,10 +13,49 @@ module top(
   inout [3:0] gpio
 );
 
+wire mclk_r, mosi_r, mselect_r;
+// use registered inputs to stabalize SPI inputs
+SB_IO #(.PIN_TYPE(6'b000000)) mclk_pin (
+  .PACKAGE_PIN(mclk),
+  .CLOCK_ENABLE(1'b1),
+  .INPUT_CLK(clk),
+  .D_IN_0(mclk_r),
+  // unused
+  .OUTPUT_CLK(clk),
+  .OUTPUT_ENABLE(1'b0),
+  .LATCH_INPUT_VALUE(1'b0),
+  .D_OUT_0(1'b0),
+  .D_OUT_1(1'b0)
+);
+SB_IO #(.PIN_TYPE(6'b000000)) mosi_pin (
+  .PACKAGE_PIN(mosi),
+  .CLOCK_ENABLE(1'b1),
+  .INPUT_CLK(clk),
+  .D_IN_0(mosi_r),
+  // unused
+  .OUTPUT_CLK(clk),
+  .OUTPUT_ENABLE(1'b0),
+  .LATCH_INPUT_VALUE(1'b0),
+  .D_OUT_0(1'b0),
+  .D_OUT_1(1'b0)
+);
+SB_IO #(.PIN_TYPE(6'b000000)) mselect_pin (
+  .PACKAGE_PIN(mselect),
+  .CLOCK_ENABLE(1'b1),
+  .INPUT_CLK(clk),
+  .D_IN_0(mselect_r),
+  // unused
+  .OUTPUT_CLK(clk),
+  .OUTPUT_ENABLE(1'b0),
+  .LATCH_INPUT_VALUE(1'b0),
+  .D_OUT_0(1'b0),
+  .D_OUT_1(1'b0)
+);
+
 `ifdef SIM
 localparam UDF = 8'hxx;
 `else
-localparam UDF = 8'hff;
+localparam UDF = 8'h21; // '!'
 `endif
 
 reg [3:0] gpio_dir = 4'h0;
@@ -54,21 +93,19 @@ wire latch;
 spi_slave D(
   .clk(clk),
 
-  .cpol(0),
-  .cpha(0),
-
-  .select(~mselect),
-  .mclk(mclk),
-  .mosi(mosi),
+  .select(~mselect_r),
+  .mclk(mclk_r),
+  .mosi(mosi_r),
   .miso(miso),
 
   .din(dout),
   .dout(din),
   
-  .done(latch)
+  .request(latch)
 );
 
 localparam S_IDLE = 0,
+           S_START = 9,
            S_ERR  = 1,
            S_ECHO = 2,
            S_WRITE_ADDR = 3,
@@ -85,13 +122,16 @@ reg [7:0] ramptr;
 
 always @(posedge clk)
   begin
-  if(mselect)
+  if(mselect_r)
   begin
     state  <= S_IDLE;
     dout   <= UDF;
     ramptr <= 0;
   end else if(latch) case(state)
     S_IDLE:begin
+      state <= S_START;
+      end
+    S_START:begin
       case(din)
       8'h11:begin // command echo
         $display("# CMD ECHO");

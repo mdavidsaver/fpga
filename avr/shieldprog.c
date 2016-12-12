@@ -23,6 +23,9 @@
  * PB0 - CDONE
  * PD6 - app. specific
  * PD5 - app. specific
+ *
+ * PD3 - A3
+ * PD2 - A2
  */
 
 #define PORT_SPI  PORTB
@@ -93,9 +96,10 @@ static inline void setup_spi(void)
     /* ICE40 programmed in mode 3
      * SCLK idles high, setup on falling edge, sample on rising edge.
      * MSB
-     * Clock /16
+     * Clock /16 SPR0=1 SPR1=0 SPI2x=0
+     *       /64 SPR0=0 SPR1=1 SPI2x=0
      */
-    SPCR =_BV(SPE) | _BV(MSTR) | _BV(CPOL) | _BV(CPHA) | _BV(SPR0);
+    SPCR =_BV(SPE) | _BV(MSTR) | _BV(CPOL) | _BV(CPHA) | _BV(SPR1);
 }
 
 static inline void setup_gpio(void)
@@ -169,6 +173,8 @@ int main(void)
     PORT_SPI = _BV(PORT_SCLK) | _BV(PORT_CRST) | _BV(PORT_SS);
     DDR_SPI = _BV(DD_SCLK) | _BV(DD_MOSI) | _BV(DD_SS) | _BV(DD_CRST);
 
+    DDRD  |= _BV(DDD2);
+
     /* SPI engine disabled */
     SPCR = 0;
 
@@ -236,8 +242,8 @@ int main(void)
             break;
 
         case 0x16: /* SPI transfer in/out */
-            setup_spi();
             uart_tx(cmd);
+            setup_spi();
             uart_tx(spi_byte(val));
             break;
 
@@ -253,6 +259,27 @@ int main(void)
         case 0x42:
             uart_tx(cmd);
             uart_tx(val); // echo
+            break;
+
+        case 0x55:
+            uart_tx(cmd);
+            setup_spi();
+            PORTD  &= ~_BV(PORTD2);
+            PORT_SPI |= _BV(PORT_SS); /* SS=1 */
+            _delay_us(1);
+            PORT_SPI &= ~_BV(PORT_SS); /* SS=0 */
+
+            spi_byte(0x11); // echo command
+            spi_byte(val);
+        {
+            uint8_t rep = spi_byte(0xaa);
+            if(rep!=val) {
+                PORTD  |= _BV(PORTD2);
+            }
+            uart_tx(rep);
+        }
+
+            PORT_SPI |= _BV(PORT_SS); /* SS=1 */
             break;
 
         default:

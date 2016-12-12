@@ -14,12 +14,19 @@ def getargs():
 
     SP = P.add_subparsers()
 
+    S = SP.add_parser('status')
+    S.set_defaults(cmd=status)
+
     S = SP.add_parser('loadbin')
     S.set_defaults(cmd=loadbin)
     S.add_argument('binfile', metavar='FILE', help='ice40 .bin file')
 
     S = SP.add_parser('echo')
     S.set_defaults(cmd=bitecho)
+    S.add_argument('-N','--number', type=int, default=4)
+
+    S = SP.add_parser('bittest')
+    S.set_defaults(cmd=bittest)
     S.add_argument('-N','--number', type=int, default=4)
 
     S = SP.add_parser('write')
@@ -40,17 +47,17 @@ def getargs():
     return args
 
 class AVR(serial.Serial):
-    def prepare(self):
+    def prepare(self, args):
         print ("Open", args.device)
         time.sleep(2.0) # wait for Arduino to reset
-        ser.flush()
+        self.flush()
         print("Begin")
 
-        ser.echo()
-        ser.echo()
-        ser.echo()
+        self.echo()
+        self.echo()
+        self.echo()
 
-        ser.cmd(0x17, 1, expect=1) # SS=1
+        self.cmd(0x17, 1, expect=1) # SS=1
         time.sleep(0.01)
 
     def writel(self, msg):
@@ -74,6 +81,20 @@ class AVR(serial.Serial):
         N = randint(0,255)
         self.cmd(0x42, N, expect=N)
 
+def status(args):
+    with AVR(port=args.device, baudrate=115200) as ser:
+        ser.prepare(args)
+
+        done = ser.cmd(0x15, 0) # cdone set
+
+    if done==0xd0:
+        print("Loaded")
+    elif done==0xbd:
+        print("Not loaded")
+        sys.exit(1)
+    else:
+        print("???", done)
+        sys.exit(2)
 
 def loadbin(args):
     with open(args.binfile, 'rb') as F:
@@ -84,7 +105,7 @@ def loadbin(args):
         sys.exit(1)
 
     with AVR(port=args.device, baudrate=115200) as ser:
-        ser.prepare()
+        ser.prepare(args)
 
         print("Reset and enter program")
         ser.cmd(0x10, 0, expect=0xbd)
@@ -116,70 +137,91 @@ def loadbin(args):
         ser.cmd(0x15, 0, expect=0xd0) # cdone set
 
 def bitecho(args):
-    V = []
-    for n in range(args.number):
-        V.append(N = randint(0,255))
-
-    out = [0x11] + V + [0xff]
-    exp = [0xff, 0x22] + V
-    act = [None]*len(exp)
+    inp, out = [], []
 
     with AVR(port=args.device, baudrate=115200) as ser:
-        ser.prepare()
+        ser.prepare(args)
+
+        print("Check CDONE")
+        ser.cmd(0x15, 0, expect=0xd0) # cdone set
+
+        ser.cmd(0x17, 0, expect=0) # SS=0
+        ser.cmd(0x16, 0x11) # echo cmd
+
+        for i in range(args.number):
+            next = randint(0,255)
+            inp.append(ser.cmd(0x16, next))
+            out.append(next)
+            if len(out)>1:
+                if inp[-1]!=out[-2]:
+                    break
+        ser.cmd(0x17, 1, expect=1) # SS=1
+
+    inp = inp[1:] # discard reply to echo command
+    out = out[:-1]# discard last byte sent (reply never received)
+
+    match = 0
+    for i,(E,A) in enumerate(zip(inp, out)):
+        if E!=A:
+            match = 1
+            print("mis-match {0: 3d} E {1:02x} {1:08b}".format(i,E))
+            print("              A {0:02x} {0:08b}".format(A))
+
+    if match==0:
+        print("match")
+    sys.exit(match)
+
+def bittest(args):
+    with AVR(port=args.device, baudrate=115200) as ser:
+        ser.prepare(args)
 
         print("Check CDONE")
         ser.cmd(0x15, 0, expect=0xd0) # cdone set
 
         ser.cmd(0x17, 0, expect=0) # SS=0
 
-        for i,O in enumerate(out):
-            act[i] = ser.cmd(0x16, O)
+        S = randint(0,255)
+        R = ser.cmd(0x55, S)
 
         ser.cmd(0x17, 1, expect=1) # SS=1
 
-        match = 0
-        for i,(E,A) in enumerate(zip(exp[1:], act[1:])):
-            if E!=A:
-                match = 1
-                print("mis-match", i, E, A)
-
-    sys.exit(match)
+    sys.exit(S!=R)
 
 def memwrite(args):
     out = [0x12, args.addr] + map(ord, args.bytes)
 
     with AVR(port=args.device, baudrate=115200) as ser:
-        ser.prepare()
+        ser.prepare(args)
 
         print("Check CDONE")
         ser.cmd(0x15, 0, expect=0xd0) # cdone set
 
         ser.cmd(0x17, 0, expect=0) # SS=0
 
-        for O in out:
-            ser.cmd(0x16, O)
+        for v in out:
+            ser.cmd(0x16, v)
 
         ser.cmd(0x17, 1, expect=1) # SS=1
 
 
 def memread(args):
-    out = [0x12, args.addr] + [0xff]*(args.count+1)
+    out = [0x13, args.addr] + [0xff]*(args.count+1)
     rep = [None]*len(out)
 
     with AVR(port=args.device, baudrate=115200) as ser:
-        ser.prepare()
+        ser.prepare(args)
 
         print("Check CDONE")
         ser.cmd(0x15, 0, expect=0xd0) # cdone set
 
         ser.cmd(0x17, 0, expect=0) # SS=0
 
-        for i,O in enumerate(out):
-            rep[i] = ser.cmd(0x16, O)
+        for i,v in enumerate(out):
+            rep[i] = ser.cmd(0x16, v)
 
         ser.cmd(0x17, 1, expect=1) # SS=1
 
-    print(', '.join(map(str, rep[3:])))
+    print(', '.join(map(chr, rep[3:])))
 
 def main(args):
     args.cmd(args)
