@@ -6,15 +6,20 @@ module scope_buffer(
   input clk,
   
   input reset,
-  input freeze,
-  
+  input trigger,
+  input halt,
+
+  output triggered,
+  output done,
+
+  input [(NSAMP-1):0] npost,  
+
   input [(N-1):0] din,
   input           din_latch,
 
   output [(N-1):0] dout,
   input            dout_pop,
-  output           dout_ready,
-  output           dout_oflow
+  output           dout_ready
 );
 
 parameter N = 8;
@@ -23,50 +28,51 @@ parameter N = 8;
 parameter NSAMP = 4;
 localparam DEPTH = 1<<NSAMP;
 
-reg [(N-1):0] mem [0:(DEPTH-1)];
-
-reg [(N-1):0] rptr;
-reg [(N-1):0] wptr;
-
-wire empty = wptr==rptr;
-wire full  = (wptr+1)==rptr;
-
-assign dout_ready = mode==S_FIFO & ~empty;
-assign dout_oflow = mode==S_FIFO & full;
-
-localparam S_CIRC = 0,
-           S_FIFO = 1;
-reg mode;
-
-assign dout = mem[rptr];
-
+reg triggered;
 always @(posedge clk)
   if(reset)
-    mode <= S_CIRC;
-  else if(freeze)
-    mode <= S_FIFO;
+    triggered <= 0;
+  else if(trigger)
+    triggered <= 1;
 
+reg [(NSAMP-1):0] postcnt;
 always @(posedge clk)
-  if(reset) begin
+  if(trigger & ~triggered)
+    postcnt <= npost;
+  else if(din_latch & postcnt!=0)
+    postcnt <= postcnt - 1;
+
+reg done;
+always @(posedge clk)
+  if(reset)
+    done <= 0;
+  else if(halt | (din_latch & triggered & postcnt<=1))
+    done <= 1;
+
+reg [(NSAMP-1):0] rptr;
+always @(posedge clk)
+  if(reset)
     rptr <= 0;
+  else if(dout_pop | (store & wptr_next==rptr))
+    rptr <= rptr + 1;
+
+reg [(NSAMP-1):0] wptr;
+wire [(NSAMP-1):0] wptr_next = wptr+1;
+always @(posedge clk)
+  if(reset)
     wptr <= 0;
-  end else case(mode)
-  S_CIRC: begin
-    if(din_latch) begin
-      mem[wptr] <= din;
-      wptr      <= wptr + 1;
-      if(full | dout_pop)
-        rptr    <= rptr + 1;
-    end
-  end
-  S_FIFO: begin
-    if(din_latch & ~full) begin
-      mem[wptr] <= din;
-      wptr      <= wptr + 1;
-    end
-    if(dout_pop)
-      rptr      <= rptr + 1;
-  end
-  endcase
+  else if(store)
+    wptr <= wptr + 1;
+
+wire store = din_latch & (~triggered | postcnt!=0);
+
+wire dout_ready = done & wptr!=rptr;
+
+reg [(N-1):0] mem [0:(DEPTH-1)];
+
+assign dout = mem[rptr];
+always @(posedge clk)
+  if(store)
+    mem[wptr] <= din;
 
 endmodule
