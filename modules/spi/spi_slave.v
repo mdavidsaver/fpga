@@ -61,7 +61,7 @@ always @(posedge clk)
       dout <= 8'hxx;
 `endif
     end else case(state)
-    S_IDLE:if(select) begin
+    S_IDLE:begin
       request <= 1;
       state <= S_SETUP;
       end
