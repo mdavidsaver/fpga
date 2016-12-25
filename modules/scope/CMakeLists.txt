@@ -20,3 +20,16 @@ add_isim(test_scope_buffer
     ${PROJECT_SOURCE_DIR}/util/utest.vlib
 )
 add_itest(test_scope_buffer)
+
+add_isim(test_scope_acq
+  SRCS
+    scope_acq_tb.v
+    scope_acq.v
+    scope_trigger.v
+    scope_buffer.v
+  ARGS
+    -I${PROJECT_SOURCE_DIR}/util
+  DEPENDS
+    ${PROJECT_SOURCE_DIR}/util/utest.vlib
+)
+add_itest(test_scope_acq)
