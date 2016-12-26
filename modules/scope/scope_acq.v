@@ -83,19 +83,23 @@ scope_buffer #(
     .dout_pop(pop)
 );
 
-localparam CMD_NONE= 8'h00,
-           CMD_ID  = 8'h11,
-           CMD_STS = 8'h12,
+localparam CMD_ID  = 8'h11,
+           CMD_INSP= 8'h12,
+           CMD_MEM = 8'h13,
+           CMD_STS = 8'h14,
+           CMD_POST= 8'h15,
+           CMD_DATA= 8'h16,
            CMD_CMD = 8'h2z,
-           CMD_POST= 8'h3z,
-           CMD_DATA= 8'h4z,
-           CMD_TRIG= 8'h5z,
-           CMD_CONF= 8'b101zzzzz;
+           CMD_CONF= 8'h3z,
+           CMD_TRIG= 8'h4z;
 
 reg [3:0] mode;
 localparam S_NONE = 0,
            S_POST = 1,
-           S_DATA = 2;
+           S_TRIG = 2,
+           S_DATA = 3;
+
+reg [7:0] offset;
 
 always @(posedge clk)
     begin
@@ -103,48 +107,70 @@ always @(posedge clk)
         halt  <= 0;
         pop   <= 0;
         if(~select) begin
-            mode <= CMD_NONE;
+            mode <= S_NONE;
         end else if(drequest)
         begin
-            mode <= S_NONE;
-            din  <= 8'h42;
+            mode   <= S_NONE;
+            din    <= 8'h42;
+            offset <= 0;
             case(mode)
             default:begin
                 casez(dout)
                 CMD_ID:begin
-                    din <= 8'ha8 | NBYTES;
+                    din <= 8'h53;
+                end
+                CMD_INSP:begin
+                    din[7:4] <= NTIME;
+                    din[3:0] <= NSIG;
+                end
+                CMD_MEM:begin
+                    din <= NSAMP;
                 end
                 CMD_STS:begin
                     din <= {5'h00, buf_ready, triggered, done}; 
                 end
-                CMD_CMD:begin
-                    halt    <= dout[0];
-                    pop     <= dout[1];
-                    use_sim <= dout[2];
-                    reset   <= dout[3];
-                    din  <= 0;
-                end
                 CMD_POST:begin
-                    npost[12:8] <= dout[3:0];
                     mode        <= S_POST;
                 end
                 CMD_DATA:begin
-                    din  <= buf_out[7:0];
-                    mode <= S_DATA;
+                    din    <= buf_out[7:0];
+                    offset <= 1;
+                    mode   <= S_DATA;
+                end
+                CMD_CMD:begin
+                    halt    <= dout[0];
+                    pop     <= dout[1];
+                    // dout[2] unused
+                    reset   <= dout[3];
+                    din  <= 0;
                 end
                 CMD_CONF:begin
-                    $display("# Set Trig %x %x", dout[4:3], dout[2:0]);
-                    trig_conf[(3*dout[4:3])+:3] <= dout[2:0];
+                    use_sim <= dout[0];
+                    din  <= 0;
+                end
+                CMD_TRIG:begin
+                    $display("# Set Trig %x", dout[3:0]);
+                    offset <= dout[3:0];
+                    mode   <= S_TRIG;
+                    din    <= trig_conf[(dout[3:0]*3) +: 3];
                 end
                 endcase
             end
             S_POST:begin
-                mode <= CMD_NONE;
-                npost[7:0] <= dout;
+                $display("# npost[%x] = %x", offset*8, dout);
+                mode <=S_POST;
+                npost[(offset*8) +: 8] <= dout;
+                offset <= offset+1;
             end
             S_DATA:begin
-                mode <= CMD_NONE;
-                din  <= buf_out[15:8];
+                mode <= S_DATA;
+                din  <= buf_out[(offset*8) +: 8];
+                offset <= offset+1;
+            end
+            S_TRIG:begin
+                $display("# Trig ch %x = %x", offset, dout);
+                mode <= S_NONE;
+                trig_conf[(offset*3) +: 3] <= dout;
             end
             endcase
         end
