@@ -1,0 +1,50 @@
+# on board 12 MHz crystal
+set_io crystal 90
+# clocks from RPi
+set_io gclk1 33
+set_io gclk2 34
+
+# SPI1 w/ CE2 on RPi
+set_io debug_ss 49
+set_io debug_sclk 48
+set_io debug_mosi 46
+set_io debug_miso 45
+
+# SPI0 w/ CE0 on RPi
+set_io ss 51
+set_io sclk 52
+set_io miso 53
+set_io mosi 54
+
+set_io adc1_ss   64
+set_io adc1_sclk 65
+set_io adc1_miso 66
+set_io adc1_mosi 68
+
+set_io adc2_ss   56
+set_io adc2_sclk 57
+set_io adc2_miso 59
+set_io adc2_mosi 60
+
+set_io dac1_sync 80
+set_io dac1_sclk 79
+set_io dac1_mosi 78
+
+set_io dac2_sync 85
+set_io dac2_sclk 83
+set_io dac2_mosi 82
+
+set_io gpio0[0] 28
+set_io gpio0[1] 27
+set_io gpio0[2] 30
+set_io gpio0[3] 29
+
+set_io gpio1[0] 1
+set_io gpio1[1] 2
+set_io gpio1[2] 3
+set_io gpio1[3] 4
+
+set_io gpio2[0] 18
+set_io gpio2[1] 19
+set_io gpio2[2] 20
+set_io gpio2[3] 21
