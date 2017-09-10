@@ -1,12 +1,12 @@
 module test;
 
 `include "utest.vlib"
+`TEST_CLOCK(clk,10);
+
 `define TMOMAX 8'hff
 `include "mtest.vlib"
 
 `TEST_PRELUDE(21)
-
-`TEST_CLOCK(clk,10);
 
 `TEST_TIMEOUT(4000)
 
