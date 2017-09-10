@@ -13,7 +13,7 @@ module top(
   inout [3:0] gpio
 );
 
-wire mclk_r, mosi_r, mselect_r;
+wire mclk_r, mosi_r, mselect_r, miso_x;
 // use registered inputs to stabalize SPI inputs
 SB_IO #(.PIN_TYPE(6'b000000)) mclk_pin (
   .PACKAGE_PIN(mclk),
@@ -49,6 +49,18 @@ SB_IO #(.PIN_TYPE(6'b000000)) mselect_pin (
   .OUTPUT_ENABLE(1'b0),
   .LATCH_INPUT_VALUE(1'b0),
   .D_OUT_0(1'b0),
+  .D_OUT_1(1'b0)
+);
+// non-registered output w/ enable
+SB_IO #(.PIN_TYPE(6'b101001)) miso_pin (
+  .PACKAGE_PIN(miso),
+  .OUTPUT_ENABLE(~mselect_r),
+  .D_OUT_0(miso_x),
+  // unused
+  .OUTPUT_CLK(clk),
+  .INPUT_CLK(clk),
+  .CLOCK_ENABLE(1'b1),
+  .LATCH_INPUT_VALUE(1'b0),
   .D_OUT_1(1'b0)
 );
 
@@ -96,7 +108,7 @@ spi_slave D(
   .select(~mselect_r),
   .mclk(mclk_r),
   .mosi(mosi_r),
-  .miso(miso),
+  .miso(miso_x),
 
   .din(dout),
   .dout(din),
@@ -116,7 +128,7 @@ localparam S_IDLE = 0,
            S_GPIO_DATA = 8;
 reg [3:0] state = 0;
 
-wire err = state==S_ERR;
+wire err = mselect_r;
 reg [7:0] ram [0:255];
 reg [7:0] ramptr;
 
@@ -130,6 +142,7 @@ always @(posedge clk)
   end else if(latch) case(state)
     S_IDLE:begin
       state <= S_START;
+      dout   <= UDF;
       end
     S_START:begin
       case(din)

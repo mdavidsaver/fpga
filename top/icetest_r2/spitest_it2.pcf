@@ -10,4 +10,4 @@ set_io gpio[1] 16
 set_io gpio[2] 18
 set_io gpio[3] 19
 
-set_io err 25
+set_io err 36
