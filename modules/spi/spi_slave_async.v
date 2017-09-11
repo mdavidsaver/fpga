@@ -13,11 +13,11 @@ module spi_slave_async(
     input mosi,
     output miso,
 
-    output clk, // gated clock
-    output ready,
+    output clk, // output clock, use posedge
+    output ready, // set when mdat is valid, should update sdat
     output [0:7] mdat, // master data
     input [0:7] sdat, // slave data
-    output reset
+    output reset // async, active high, reset
 );
 
 wire reset = ~ss;
