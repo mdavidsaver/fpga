@@ -136,8 +136,7 @@ function(add_synth target)
   add_custom_command(
     COMMENT "Test Compile ${target}.vvp"
     OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/${target}.vvp
-    DEPENDS ${IVERILOG_EXECUTABLE} ${A_SRCS} ${A_DEPENDS} 
-       ${ICE40_SIM}
+    DEPENDS ${IVERILOG_EXECUTABLE} ${A_SRCS} ${A_DEPENDS}
     COMMAND ${IVERILOG_EXECUTABLE} -o ${CMAKE_CURRENT_BINARY_DIR}/${target}.vvp -DSIM "-DVCD=\"\\\"${target}.vcd\\\"\"" -g2001 -Wall ${A_ARGS} ${B_SRCS} ${ICE40_SIM}
   )
 
