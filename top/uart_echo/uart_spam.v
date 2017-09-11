@@ -19,7 +19,7 @@ assign sig2 = serrx;
 
 reg  send;
 wire busy, tx_bit_clk;
-reg  [7:0] dout = 97;
+reg  [7:0] dout = 0;
 
 frac_div #(
   .Width(15),
@@ -35,7 +35,7 @@ uart_tx D(
 
   .out(sertxi),
 
-  .in(dout),
+  .in(dout+97),
   .send(send),
   .busy(busy)
 );
@@ -71,7 +71,7 @@ always @(posedge clk)
       slow_ena <= 0;
       state    <= 0;
 //      dout     <= 8'b01010101;
-      if(dout==122) dout <= 97;     // 'a' through 'z'
+      if(dout==122+97) dout <= 0;     // 'a' through 'z'
       else          dout <= dout+1;
       led[4] <= ~led[4];
     end
