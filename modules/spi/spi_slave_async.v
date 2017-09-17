@@ -33,7 +33,7 @@ reg [0:2] state;
 
 always @(posedge sclk, negedge ss)
   if(!ss)
-    {ready, state} <= 4'h00;
+    {ready, state} <= 4'h0;
   else
     {ready, state} <= state + 1;
 
@@ -57,9 +57,9 @@ always @(posedge sclk)
 
 
 always @(posedge sclk, negedge ss)
-  $display("/ %d ss=%d state=%d ready=%d", $simtime, ss, state, ready);
+  $display("# / %d ss=%d state=%d ready=%d", $simtime, ss, state, ready);
 always @(negedge sclk)
-  $display("\\ %d sdat=%x dshift=%x mosi=%d", $simtime, sdat, dshift, mosi);
+  $display("# \\ %d sdat=%x dshift=%x mosi=%d", $simtime, sdat, dshift, mosi);
 endmodule
 
 /*

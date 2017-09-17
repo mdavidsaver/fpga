@@ -19,7 +19,7 @@ task spi_xfer;
   input [0:7] in;
   output [0:7] out;
   begin
-    $display("spi_xfer start in=%x", in);
+    $display("# spi_xfer start in=%x", in);
     #2 mosi <= in[0];
     sclk <= 1;
     #2 sclk <= 0;
@@ -75,7 +75,7 @@ spi_slave_async dut(
 
 always @(posedge dut.clk)
   if(dut.ready) begin
-    $display("@ %d Ready mdat=%x sdat=%x", $simtime, dut.mdat, tsdat);
+    $display("# @ %d Ready mdat=%x sdat=%x", $simtime, dut.mdat, tsdat);
     sdatl <= tsdat;
     tmdat <= dut.mdat;
   end else
