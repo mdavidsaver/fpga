@@ -23,8 +23,6 @@ adc082s021 dut(
     .clk(clk),
     .reset(reset),
     .channel(channel),
-    .selected(ctrl.selected),
-    .ready(ctrl.ready),
     .cnt(ctrl.cnt),
     .miso(miso)
 );
@@ -54,15 +52,15 @@ begin
     @(posedge clk);
     @(posedge clk);
 
-    while(~dut.ready) @(posedge clk);
+    while(~ctrl.ready) @(posedge clk);
     `ASSERT_EQUAL(frame_mosi, 16'h0800, "first cmd")
     `ASSERT_EQUAL(dut.data, 12'hff0, "first data")
 
     frame_miso <= 17'hxx120;
 
-    while(dut.ready) @(posedge clk);
+    while(ctrl.ready) @(posedge clk);
 
-    while(~dut.ready) @(posedge clk);
+    while(~ctrl.ready) @(posedge clk);
     `ASSERT_EQUAL(frame_mosi, 16'h0800, "second cmd")
     `ASSERT_EQUAL(dut.data, 12'h120, "second data")
 

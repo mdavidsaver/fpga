@@ -146,6 +146,14 @@ function(add_synth target)
         ${target}.vvp
     )
   else()
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/${target}.yocmd" "# Yosys script\n")
+    foreach(src ${B_SRCS})
+        file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/${target}.yocmd" "read_verilog ${A_ARGS} ${src}\n")
+    endforeach()
+    file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/${target}.yocmd" "synth_ice40 -abc2 -retime\n")
+    file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/${target}.yocmd" "check -noinit -assert\n")
+    file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/${target}.yocmd" "write_blif -gates -attr -param ${CMAKE_CURRENT_BINARY_DIR}/${target}.blif\n")
+
     # don't use synth_ice40 -blif foo.blif
     # to avoid problem of removing output file if 'check' fails
     add_custom_command(
@@ -154,10 +162,8 @@ function(add_synth target)
         DEPENDS ${YOSYS_EXECUTABLE} ${A_SRCS} ${A_DEPENDS}
                 ${CMAKE_CURRENT_BINARY_DIR}/${target}.vvp
         COMMAND ${CMAKE_COMMAND} -E remove -f ${target}.blif
-        COMMAND ${YOSYS_EXECUTABLE} -p "synth_ice40 -abc2 -retime"
-                                    -p "check -noinit -assert"
-                                    -p "write_blif -gates -attr -param ${CMAKE_CURRENT_BINARY_DIR}/${target}.blif"
-                                    ${B_SRCS} > ${CMAKE_CURRENT_BINARY_DIR}/${target}.blif.out
+        COMMAND ${YOSYS_EXECUTABLE} -s ${CMAKE_CURRENT_BINARY_DIR}/${target}.yocmd
+                                     > ${CMAKE_CURRENT_BINARY_DIR}/${target}.blif.out
     )
 
     add_custom_command(

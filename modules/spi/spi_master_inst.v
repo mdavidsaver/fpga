@@ -3,8 +3,6 @@ module spi_master_inst(
     input reset, // sync reset
 
     // from spi_master_ctrl
-    input selected, // non-inverted ss
-    input ready,    // end of frame
     input [(3+BYTES):0] cnt,
 
     // bus signals

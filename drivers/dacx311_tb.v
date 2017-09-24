@@ -22,8 +22,6 @@ spi_master_ctrl #(
 dacx311 dut(
     .clk(clk),
     .reset(reset),
-    .selected(ctrl.selected),
-    .ready(ctrl.ready),
     .cnt(ctrl.cnt),
     .miso(1'b0),
     .pd(pd),
@@ -46,15 +44,15 @@ begin
     data <= 12'hfff;
     reset <= 0;
 
-    @(posedge dut.ready);
+    @(posedge ctrl.ready);
 
     data <= 12'h123;
 
-    @(negedge dut.ready);
+    @(negedge ctrl.ready);
     `ASSERT_EQUAL(frame, 16'h3ffc, "first")
 
-    @(posedge dut.ready);
-    @(negedge dut.ready);
+    @(posedge ctrl.ready);
+    @(negedge ctrl.ready);
     `ASSERT_EQUAL(frame, 16'h048c, "second")
 
     #8 `TEST_DONE 

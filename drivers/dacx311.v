@@ -6,8 +6,6 @@ module dacx311(
     input reset, // sync reset
 
     // from spi_master_ctrl
-    input selected, // non-inverted ss
-    input ready,    // end of frame
     input [5:0] cnt,
 
     // bus signals
@@ -25,8 +23,6 @@ spi_master_inst #(
 ) spi(
     .clk(clk),
     .reset(reset),
-    .selected(selected),
-    .ready(ready),
     .cnt(cnt),
     .mosi(mosi),
     .miso(miso),

@@ -24,8 +24,6 @@ spi_master_inst #(
 ) inst(
     .clk(clk),
     .reset(reset),
-    .selected(ctrl.selected),
-    .ready(ctrl.ready),
     .cnt(ctrl.cnt),
     .miso(tester.miso),
     .mdat(mdat)

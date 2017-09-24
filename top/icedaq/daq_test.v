@@ -47,9 +47,16 @@ always @(posedge clk)
             cnt_l <= cnt;
     end
 
+reg [7:0] lut [255:0];
+`define STRINGIFY(x) `"x`"
+initial begin
+    $readmemh("sine8x256.txt", lut);
+end
+wire [7:0] sine = lut[cnt];
+
 wire ready;
 
-wire ctrl_ss, ctrl_sclk, ctrl_selected;
+wire ctrl_ss, ctrl_sclk;
 wire [5:0] ctrl_cnt;
 
 spi_master_ctrl #(
@@ -67,26 +74,22 @@ spi_master_ctrl #(
 );
 
 assign dac1_sync = ctrl_ss;
-assign dac1_sclk = ctrl_sclk;
+assign dac1_sclk = ~ctrl_sclk;
 dacx311 dac1(
     .clk(clk),
     .reset(reset),
-    .selected(ctrl_selected),
-    .ready(ctrl_ready),
     .cnt(ctrl_cnt),
     .miso(reset), // one way
     .mosi(dac1_mosi),
     .pd(2'b00), // normal
-    .data({cnt, 4'h0})
+    .data({sine, 4'h0})
 );
 
 assign dac2_sync = ctrl_ss;
-assign dac2_sclk = ctrl_sclk;
+assign dac2_sclk = ~ctrl_sclk;
 dacx311 dac2(
     .clk(clk),
     .reset(reset),
-    .selected(ctrl_selected),
-    .ready(ctrl_ready),
     .cnt(ctrl_cnt),
     .miso(1'b0), // one way
     .mosi(dac2_mosi),
@@ -107,8 +110,6 @@ adc082s021 adc1(
     .clk(clk),
     .reset(reset),
     .channel(3'h1),
-    .selected(ctrl_selected),
-    .ready(ctrl_ready),
     .cnt(ctrl_cnt),
     .miso(adc1_miso),
     .mosi(adc1_mosi),
@@ -122,8 +123,6 @@ adc082s021 adc2(
     .clk(clk),
     .reset(reset),
     .channel(3'h1),
-    .selected(ctrl_selected),
-    .ready(ctrl_ready),
     .cnt(ctrl_cnt),
     .miso(adc2_miso),
     .mosi(adc2_mosi),
