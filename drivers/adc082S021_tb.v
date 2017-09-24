@@ -12,25 +12,35 @@ reg reset = 1;
 reg [2:0] channel = 1;
 wire miso;
 
+spi_master_ctrl #(
+    .BYTES(2)
+) ctrl(
+    .clk(clk),
+    .reset(reset)
+);
+
 adc082s021 dut(
     .clk(clk),
     .reset(reset),
     .channel(channel),
+    .selected(ctrl.selected),
+    .ready(ctrl.ready),
+    .cnt(ctrl.cnt),
     .miso(miso)
 );
 
 reg [15:0] frame_mosi;
-always @(negedge dut.sclk)
-    if(~dut.ss)
+always @(negedge ctrl.sclk)
+    if(~ctrl.ss)
         frame_mosi <= 0;
     else
         frame_mosi <= {frame_mosi[14:0], dut.mosi};
 
 reg [16:0] frame_miso;
-assign miso = frame_miso[15];
+assign miso = frame_miso[16];
 
-always @(posedge dut.sclk)
-    if(dut.ss)
+always @(posedge ctrl.sclk)
+    if(ctrl.ss)
         frame_miso <= {frame_miso[15:0], 1'bx};
 
 initial

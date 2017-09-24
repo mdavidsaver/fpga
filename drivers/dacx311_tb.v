@@ -12,17 +12,28 @@ reg reset = 1;
 reg [1:0] pd = 0;
 reg [11:0] data = 0;
 
+spi_master_ctrl #(
+    .BYTES(2)
+) ctrl(
+    .clk(clk),
+    .reset(reset)
+);
+
 dacx311 dut(
     .clk(clk),
     .reset(reset),
+    .selected(ctrl.selected),
+    .ready(ctrl.ready),
+    .cnt(ctrl.cnt),
+    .miso(1'b0),
     .pd(pd),
     .data(data)
 );
 
 reg [15:0] frame;
 
-always @(negedge dut.sclk)
-    if(~dut.ss)
+always @(negedge ctrl.sclk)
+    if(~ctrl.ss)
         frame <= 0;
     else
         frame <= {frame[14:0], dut.mosi};
