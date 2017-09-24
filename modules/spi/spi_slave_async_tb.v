@@ -2,105 +2,93 @@ module test;
 
 `include "utest.vlib"
 
-`TEST_PRELUDE(7)
+`TEST_PRELUDE(8)
 
 `TEST_TIMEOUT(6000)
+
+`TEST_CLOCK(tclk, 2);
 
 reg sclk, mosi, ss;
 wire miso;
 
-reg [0:7] outdat;
-reg [0:7] indat;
-
-reg [0:7] tsdat;
-reg [0:7] tmdat;
-
-task spi_xfer;
-  input [0:7] in;
-  output [0:7] out;
-  begin
-    $display("# spi_xfer start in=%x", in);
-    #2 mosi <= in[0];
-    sclk <= 1;
-    #2 sclk <= 0;
-    out[0] <= miso;
-
-    #2 mosi <= in[1];
-    sclk <= 1;
-    #2 sclk <= 0;
-    out[1] <= miso;
-
-    #2 mosi <= in[2];
-    sclk <= 1;
-    #2 sclk <= 0;
-    out[2] <= miso;
-
-    #2 mosi <= in[3];
-    sclk <= 1;
-    #2 sclk <= 0;
-    out[3] <= miso;
-
-    #2 mosi <= in[4];
-    sclk <= 1;
-    #2 sclk <= 0;
-    out[4] <= miso;
-
-    #2 mosi <= in[5];
-    sclk <= 1;
-    #2 sclk <= 0;
-    out[5] <= miso;
-
-    #2 mosi <= in[6];
-    sclk <= 1;
-    #2 sclk <= 0;
-    out[6] <= miso;
-
-    #2 mosi <= in[7];
-    sclk <= 1;
-    #2 sclk <= 0;
-    out[7] = miso; // immediate assignment
-    `ASSERT_EQUAL(dut.ready, 1, "ready")
-  end
-endtask
-
-reg [0:7] sdatl;
+reg [0:7] sdat;
 
 spi_slave_async dut(
     .sclk(sclk),
     .miso(miso),
     .mosi(mosi),
     .ss(ss),
-    .sdat(sdatl)
+    .sdat(sdat)
 );
 
-always @(posedge dut.clk)
-  if(dut.ready) begin
-    $display("# @ %d Ready mdat=%x sdat=%x", $simtime, dut.mdat, tsdat);
-    sdatl <= tsdat;
-    tmdat <= dut.mdat;
-  end else
-    sdatl <= 8'hxx;
+reg [7:0] shift_mosi;
+reg [7:0] shift_miso;
+
+always @(posedge tclk)
+    if(ss)
+        sclk <= ~sclk;
+    else
+        sclk <= 0;
+
+always @(posedge tclk)
+    if(ss & sclk==0)
+        {mosi, shift_mosi} <= {shift_mosi, 1'bx};
+
+always @(posedge tclk)
+    if(ss & sclk==1)
+        shift_miso = {shift_miso[6:0], miso};
 
 initial
 begin
   `TEST_INIT(test)
 
-  sclk <= 0;
   mosi <= 0;
   ss <= 0;
-  #2
+  @(posedge tclk);
   ss <= 1;
+  @(posedge tclk);
+  @(posedge tclk);
+  @(posedge tclk);
+  @(posedge tclk);
+  @(posedge tclk);
+  @(posedge tclk);
 
-  spi_xfer(8'b01101010, outdat);
-  `ASSERT_EQUAL(dut.mdat, 8'b01101010, "master data")
-  tsdat <= 8'b10010101;
-  spi_xfer(8'b10010001, outdat);
-  `ASSERT_EQUAL(dut.mdat, 8'b10010001, "master data")
-  `ASSERT_EQUAL(outdat, 8'b10010101, "slave data")
-  tsdat <= 8'b10010010;
-  spi_xfer(8'hxx, outdat);
-  `ASSERT_EQUAL(outdat, 8'b10010010, "slave data")
-  tsdat <= 8'hxx;
+
+  `ASSERT_EQUAL(dut.state, 3, "transfer in progress")
+  ss <= 0;
+  @(posedge tclk);
+  `ASSERT_EQUAL(dut.state, 0, "transfer in aborted")
+  @(posedge tclk);
+
+  ss <= 1;
+  shift_mosi <= 8'hff;
+  shift_miso <= 8'hxx;
+
+  while(~dut.ready) @(posedge dut.clk);
+  `ASSERT_EQUAL(dut.mdat, 8'hff, "Master data")
+  `ASSERT_EQUAL(shift_miso, 8'hxx, "Slave data")
+  shift_miso <= 8'hxx;
+
+  shift_mosi <= 8'hab;
+  sdat <= 8'h78;
+
+  while(dut.ready) @(posedge dut.clk);
+  sdat <= 8'hxx;
+  while(~dut.ready) @(posedge dut.clk);
+  `ASSERT_EQUAL(dut.mdat, 8'hab, "Master data")
+  `ASSERT_EQUAL(shift_miso, 8'h78, "Slave data")
+  shift_miso <= 8'hxx;
+
+  shift_mosi <= 8'h4e;
+  sdat <= 8'h39;
+
+  while(dut.ready) @(posedge dut.clk);
+  sdat <= 8'hxx;
+  while(~dut.ready) @(posedge dut.clk);
+  `ASSERT_EQUAL(dut.mdat, 8'h4e, "Master data")
+  `ASSERT_EQUAL(shift_miso, 8'h39, "Slave data")
+  shift_miso <= 8'hxx;
+
 
   #8 `TEST_DONE
 end

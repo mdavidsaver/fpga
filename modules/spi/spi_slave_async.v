@@ -6,6 +6,12 @@
  *
  * User logic should act on rising edge of 'clk'
  * to use 'mdat' to drive 'sdat'.
+ spi_slave_async (...);
+ always @(posedge clk, posedge reset)
+    if(reset) ...
+    else if(ready)
+        sdat <= ...;
+        ... <= mdat;
  */
 module spi_slave_async(
     input ss,   // active high
@@ -20,45 +26,59 @@ module spi_slave_async(
     output reset // async, active high, reset
 );
 
-wire reset = ~ss;
+parameter SS = 1'b0; // SS idle state
+parameter CPOL = 1'b0; // SCLK idle state
 
-wire clk = ss & ~sclk;
+// real signals (active high)
+wire ss_r   = ss ^ SS,
+     sclk_r = sclk ^ CPOL;
+
+wire reset = ~ss_r;
+
+wire clk = ss_r & ~sclk_r;
 
 reg mosi_l;
-always @(negedge sclk)
+always @(negedge sclk_r)
   mosi_l <= mosi;
 
 reg ready;
 reg [0:2] state;
 
-always @(posedge sclk, negedge ss)
-  if(!ss)
+always @(posedge sclk_r, negedge ss_r)
+  if(!ss_r)
     {ready, state} <= 4'h0;
   else
     {ready, state} <= state + 1;
 
 reg miso;
-always @(posedge sclk)
+always @(posedge sclk_r)
   if(ready)
     miso <= sdat[0];
   else
     miso <= dshift[1];
 
-// sampled when mosi is stable, posedge clk (aka negedge sclk)
+// sampled when mosi is stable, posedge clk (aka negedge sclk_r)
 wire [0:7] mdat = {dshift[1:7], mosi};
 
 reg [0:7] dshift;
 
-always @(posedge sclk)
+always @(posedge sclk_r)
   if(ready)
     dshift <= sdat;
   else
     dshift <= {dshift[1:7], mosi_l};
 
+`ifdef SIM
+always @(negedge ss_r)
+    dshift <= 8'hxx;
+`endif
 
-always @(posedge sclk, negedge ss)
-  $display("# / %d ss=%d state=%d ready=%d", $simtime, ss, state, ready);
-always @(negedge sclk)
+
+always @(posedge sclk_r)
+  $display("# / %d ss_r=%d state=%d ready=%d", $simtime, ss_r, state, ready);
+always @(negedge ss_r)
+  $display("# X %d ss_r=%d state=%d ready=%d", $simtime, ss_r, state, ready);
+always @(negedge sclk_r)
   $display("# \\ %d sdat=%x dshift=%x mosi=%d", $simtime, sdat, dshift, mosi);
 endmodule
 
