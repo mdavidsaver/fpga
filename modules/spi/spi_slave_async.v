@@ -17,10 +17,10 @@ module spi_slave_async(
     input ss,   // active high
     input sclk,
     input mosi,
-    output miso,
+    output reg miso,
 
     output clk, // output clock, use posedge
-    output ready, // set when mdat is valid, should update sdat
+    output reg ready, // set when mdat is valid, should update sdat
     output [0:7] mdat, // master data
     input [0:7] sdat, // slave data
     output reset // async, active high, reset
@@ -35,24 +35,23 @@ wire ss_r   = ss ^ SS,
 
 wire reset = ~ss_r;
 
-wire clk = ss_r & ~sclk_r;
+wire clk = ~sclk_r;
 
 reg mosi_l;
 always @(negedge sclk_r)
   mosi_l <= mosi;
 
-reg ready;
 reg [0:2] state;
 
+// assert ready after rising edge of 8th sclk
 always @(posedge sclk_r, negedge ss_r)
-  if(!ss_r)
+  if(~ss_r)
     {ready, state} <= 4'h0;
   else
     {ready, state} <= state + 1;
 
-reg miso;
 always @(posedge sclk_r)
-  if(ready)
+  if(state==0) // first tick of second byte
     miso <= sdat[0];
   else
     miso <= dshift[1];
@@ -60,18 +59,13 @@ always @(posedge sclk_r)
 // sampled when mosi is stable, posedge clk (aka negedge sclk_r)
 wire [0:7] mdat = {dshift[1:7], mosi};
 
-reg [0:7] dshift;
+reg [1:7] dshift;
 
 always @(posedge sclk_r)
-  if(ready)
+  if(state==0) // first tick byte
     dshift <= sdat;
   else
-    dshift <= {dshift[1:7], mosi_l};
-
-`ifdef SIM
-always @(negedge ss_r)
-    dshift <= 8'hxx;
-`endif
+    dshift <= {dshift[2:7], mosi_l};
 
 
 always @(posedge sclk_r)

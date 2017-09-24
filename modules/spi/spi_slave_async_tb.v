@@ -2,7 +2,7 @@ module test;
 
 `include "utest.vlib"
 
-`TEST_PRELUDE(8)
+`TEST_PRELUDE(10)
 
 `TEST_TIMEOUT(6000)
 
@@ -42,7 +42,7 @@ initial
 begin
   `TEST_INIT(test)
 
-  mosi <= 0;
+  mosi <= 1'bx;
   ss <= 0;
   @(posedge tclk);
   ss <= 1;
@@ -69,24 +69,34 @@ begin
   `ASSERT_EQUAL(shift_miso, 8'hxx, "Slave data")
   shift_miso <= 8'hxx;
 
-  shift_mosi <= 8'hab;
-  sdat <= 8'h78;
+  shift_mosi <= 8'h00;
+  sdat <= 8'h00;
 
   while(dut.ready) @(posedge dut.clk);
   sdat <= 8'hxx;
   while(~dut.ready) @(posedge dut.clk);
-  `ASSERT_EQUAL(dut.mdat, 8'hab, "Master data")
-  `ASSERT_EQUAL(shift_miso, 8'h78, "Slave data")
+  `ASSERT_EQUAL(dut.mdat, 8'h00, "Master data")
+  `ASSERT_EQUAL(shift_miso, 8'h00, "Slave data")
   shift_miso <= 8'hxx;
 
-  shift_mosi <= 8'h4e;
-  sdat <= 8'h39;
+  shift_mosi <= 8'ha2;
+  sdat <= 8'h71;
 
   while(dut.ready) @(posedge dut.clk);
   sdat <= 8'hxx;
   while(~dut.ready) @(posedge dut.clk);
-  `ASSERT_EQUAL(dut.mdat, 8'h4e, "Master data")
-  `ASSERT_EQUAL(shift_miso, 8'h39, "Slave data")
+  `ASSERT_EQUAL(dut.mdat, 8'ha2, "Master data")
+  `ASSERT_EQUAL(shift_miso, 8'h71, "Slave data")
+  shift_miso <= 8'hxx;
+
+  shift_mosi <= 8'h41;
+  sdat <= 8'h32;
+
+  while(dut.ready) @(posedge dut.clk);
+  sdat <= 8'hxx;
+  while(~dut.ready) @(posedge dut.clk);
+  `ASSERT_EQUAL(dut.mdat, 8'h41, "Master data")
+  `ASSERT_EQUAL(shift_miso, 8'h32, "Slave data")
   shift_miso <= 8'hxx;
 
 
