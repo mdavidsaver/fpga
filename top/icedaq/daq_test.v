@@ -27,6 +27,8 @@ module top(
     output [3:0] gpio0
 );
 
+reg reset = 0;
+
 // divide 25MHz/16 -> 1.56 MHz
 reg [2:0] cdiv;
 always @(posedge gclk2)
@@ -34,89 +36,108 @@ always @(posedge gclk2)
 
 wire clk = cdiv[2];
 
-wire dac_sync, dac_sclk, dac_mosi;
-
-assign dac1_sync = ~dac_sync;
-assign dac1_sclk = ~dac_sclk;
-assign dac1_mosi = dac_mosi;
-
-assign dac2_sync = ~dac_sync;
-assign dac2_sclk = ~dac_sclk;
-assign dac2_mosi = dac_mosi;
-
-assign gpio0[0] = ~debug_ss; // 28
-assign gpio0[1] = ~debug_sclk; // 27
-assign gpio0[2] = debug_mosi; // 30
-assign gpio0[3] = debug_miso; // 29
-
-wire ready;
-
-reg reset = 0, pause = 0;
+// DAC phase counter
 reg [7:0] cnt = 0;
 reg [7:0] cnt_l;
 
-wire [11:0] frame = {cnt, 4'h0};
-
-dacx311 dac(
-    .clk(clk),
-    .reset(reset),
-    .pd(2'b00),
-    .data(frame),
-    .ready(ready),
-    .ss(dac_sync),
-    .sclk(dac_sclk),
-    .mosi(dac_mosi)
-);
-
 always @(posedge clk)
-    if(ready & ~pause) begin
+    if(ready) begin
         cnt  <= cnt + 1;
         if(debug_ss)
             cnt_l <= cnt;
     end
 
-wire adc1_ready, adc2_ready;
-wire [11:0] adc1_data;
-wire [11:0] adc2_data;
+wire ready;
 
-adc082s021 #(
-    .CPOL(1),
-    .SS(1)
-) adc1 (
+wire ctrl_ss, ctrl_sclk, ctrl_selected;
+wire [5:0] ctrl_cnt;
+
+spi_master_ctrl #(
+    .CPOL(1'b1), // active low
+    .SS(1'b1), // active low
+    .BYTES(2)
+) ctrl(
     .clk(clk),
     .reset(reset),
-    .channel(3'h1),
-    .data(adc1_data),
-    .ready(adc1_ready),
-    .ss(adc1_ss),
-    .sclk(adc1_sclk),
-    .mosi(adc1_mosi),
-    .miso(adc1_miso)
+    .selected(ctrl_selected),
+    .cnt(ctrl_cnt),
+    .ready(ready),
+    .ss(ctrl_ss),
+    .sclk(ctrl_sclk)
 );
 
-adc082s021 #(
-    .CPOL(1),
-    .SS(1)
-) adc2 (
+assign dac1_sync = ctrl_ss;
+assign dac1_sclk = ctrl_sclk;
+dacx311 dac1(
+    .clk(clk),
+    .reset(reset),
+    .selected(ctrl_selected),
+    .ready(ctrl_ready),
+    .cnt(ctrl_cnt),
+    .miso(reset), // one way
+    .mosi(dac1_mosi),
+    .pd(2'b00), // normal
+    .data({cnt, 4'h0})
+);
+
+assign dac2_sync = ctrl_ss;
+assign dac2_sclk = ctrl_sclk;
+dacx311 dac2(
+    .clk(clk),
+    .reset(reset),
+    .selected(ctrl_selected),
+    .ready(ctrl_ready),
+    .cnt(ctrl_cnt),
+    .miso(1'b0), // one way
+    .mosi(dac2_mosi),
+    .pd(2'b00), // normal
+    .data({cnt, 4'h0})
+);
+
+
+assign gpio0[0] = ctrl_ss; // 28
+assign gpio0[1] = ctrl_sclk; // 27
+assign gpio0[2] = dac1_mosi; // 30
+assign gpio0[3] = dac2_mosi; // 29
+
+wire [11:0] adc1_data;
+assign adc1_ss = ctrl_ss;
+assign adc1_sclk = ctrl_sclk;
+adc082s021 adc1(
     .clk(clk),
     .reset(reset),
     .channel(3'h1),
-    .data(adc2_data),
-    .ready(adc2_ready),
-    .ss(adc2_ss),
-    .sclk(adc2_sclk),
+    .selected(ctrl_selected),
+    .ready(ctrl_ready),
+    .cnt(ctrl_cnt),
+    .miso(adc1_miso),
+    .mosi(adc1_mosi),
+    .data(adc1_data)
+);
+
+wire [11:0] adc2_data;
+assign adc2_ss = ctrl_ss;
+assign adc2_sclk = ctrl_sclk;
+adc082s021 adc2(
+    .clk(clk),
+    .reset(reset),
+    .channel(3'h1),
+    .selected(ctrl_selected),
+    .ready(ctrl_ready),
+    .cnt(ctrl_cnt),
+    .miso(adc2_miso),
     .mosi(adc2_mosi),
-    .miso(adc2_miso)
+    .data(adc2_data)
 );
 
 reg [7:0] adc1_data_l;
 always @(posedge clk)
-    if(adc1_ready & debug_ss)
+    if(ready & debug_ss)
         adc1_data_l <= adc1_data[11:4];
 
 reg [7:0] adc2_data_l;
 always @(posedge clk)
-    if(adc2_ready & debug_ss)
+    if(ready & debug_ss)
         adc2_data_l <= adc2_data[11:4];
 
 wire dclk, dready;

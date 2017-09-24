@@ -34,6 +34,8 @@ add_synth(daq_test
   MAXCLOCK 3.2
   SRCS
       daq_test.v
+      ${PROJECT_SOURCE_DIR}/modules/spi/spi_master_ctrl.v
+      ${PROJECT_SOURCE_DIR}/modules/spi/spi_master_inst.v
       ${PROJECT_SOURCE_DIR}/drivers/dacx311.v
       ${PROJECT_SOURCE_DIR}/drivers/adc082S021.v
       ${PROJECT_SOURCE_DIR}/modules/spi/spi_slave_async.v
