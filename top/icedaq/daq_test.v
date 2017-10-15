@@ -66,7 +66,6 @@ spi_master_ctrl #(
 ) ctrl(
     .clk(clk),
     .reset(reset),
-    .selected(ctrl_selected),
     .cnt(ctrl_cnt),
     .ready(ready),
     .ss(ctrl_ss),
