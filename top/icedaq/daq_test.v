@@ -138,7 +138,7 @@ always @(posedge clk)
     if(ready & debug_ss)
         adc2_data_l <= adc2_data[11:4];
 
-wire dclk, dready;
+wire dclk, dready, n_dselect;
 wire [0:7] cmd;
 reg [0:7] reply;
 
@@ -148,18 +148,27 @@ spi_slave_async dspi(
   .mosi(debug_mosi),
   .miso(debug_miso),
   .clk(dclk),
+  .reset(n_dselect),
   .ready(dready),
   .mdat(cmd),
   .sdat(reply)
 );
 
+reg [1:0] state;
+
+always @(posedge dclk, posedge n_dselect)
+    if(n_dselect)
+        state <= 0;
+    else if(dready)
+        state <= state + 1;
+
 always @(posedge dclk)
     if(dready) begin
-    case(cmd[6:7])
+    case(state)
     0: reply <= cnt_l;
     1: reply <= adc1_data_l;
     2: reply <= adc2_data_l;
-    default: reply <= 8'hab;
+    3: reply <= 8'hab;
     endcase
     end
 
