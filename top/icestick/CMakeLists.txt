@@ -46,3 +46,31 @@ add_synth(uart_spam
     ${PROJECT_SOURCE_DIR}/modules/uart/uart_tx.v
     ${PROJECT_SOURCE_DIR}/util/frac_div.v
 )
+
+add_isim(test_irda
+  SRCS
+    irda.v
+    irda_tb.v
+    ${PROJECT_SOURCE_DIR}/modules/uart/uart.v
+    ${PROJECT_SOURCE_DIR}/modules/uart/uart_tx.v
+    ${PROJECT_SOURCE_DIR}/modules/uart/uart_rx.v
+    ${PROJECT_SOURCE_DIR}/modules/uart/uart_rx_filter.v
+    ${PROJECT_SOURCE_DIR}/util/frac_div.v
+  ARGS
+    -I${PROJECT_SOURCE_DIR}/util
+  DEPENDS
+    ${PROJECT_SOURCE_DIR}/util/utest.vlib
+)
+add_itest(test_irda)
+
+add_synth(irda
+  PCF irda.pcf
+  MAXCLOCK 12.0
+  SRCS
+    irda.v
+    ${PROJECT_SOURCE_DIR}/modules/uart/uart.v
+    ${PROJECT_SOURCE_DIR}/modules/uart/uart_tx.v
+    ${PROJECT_SOURCE_DIR}/modules/uart/uart_rx.v
+    ${PROJECT_SOURCE_DIR}/modules/uart/uart_rx_filter.v
+    ${PROJECT_SOURCE_DIR}/util/frac_div.v
+)
