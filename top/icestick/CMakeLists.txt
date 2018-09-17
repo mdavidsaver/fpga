@@ -58,6 +58,8 @@ add_isim(test_irda
     ${PROJECT_SOURCE_DIR}/util/frac_div.v
   ARGS
     -I${PROJECT_SOURCE_DIR}/util
+  ARGS
+    "-DROMFILE=\"\\\"${CMAKE_CURRENT_SOURCE_DIR}/daikin.list\\\"\""
   DEPENDS
     ${PROJECT_SOURCE_DIR}/util/utest.vlib
 )
@@ -73,4 +75,8 @@ add_synth(irda
     ${PROJECT_SOURCE_DIR}/modules/uart/uart_rx.v
     ${PROJECT_SOURCE_DIR}/modules/uart/uart_rx_filter.v
     ${PROJECT_SOURCE_DIR}/util/frac_div.v
+  IVERILOGARGS
+    "-DROMFILE=\"\\\"${CMAKE_CURRENT_SOURCE_DIR}/daikin.list\\\"\""
+  YOSYSARGS
+    "-DROMFILE=\"${CMAKE_CURRENT_SOURCE_DIR}/daikin.list\""
 )

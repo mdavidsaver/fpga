@@ -115,7 +115,7 @@ if(YOSYS_EXECUTABLE AND ICE40_SIM AND ARACHNE_EXECUTABLE AND ICEPACK_EXECUTABLE)
 endif()
 
 function(add_synth target)
-  cmake_parse_arguments(A "" "DEVICE;PCF;MAXCLOCK" "SRCS;ARGS;DEPENDS" ${ARGN})
+  cmake_parse_arguments(A "" "DEVICE;PCF;MAXCLOCK" "YOSYSARGS;IVERILOGARGS;SRCS;ARGS;DEPENDS" ${ARGN})
 
   if(NOT A_DEVICE)
     set(A_DEVICE hx1k-tq144) # default to icestick
@@ -137,7 +137,7 @@ function(add_synth target)
     COMMENT "Test Compile ${target}.vvp"
     OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/${target}.vvp
     DEPENDS ${IVERILOG_EXECUTABLE} ${A_SRCS} ${A_DEPENDS}
-    COMMAND ${IVERILOG_EXECUTABLE} -o ${CMAKE_CURRENT_BINARY_DIR}/${target}.vvp -DSIM "-DVCD=\"\\\"${target}.vcd\\\"\"" -g2001 -Wall ${A_ARGS} ${B_SRCS} ${ICE40_SIM}
+    COMMAND ${IVERILOG_EXECUTABLE} -o ${CMAKE_CURRENT_BINARY_DIR}/${target}.vvp -DSIM "-DVCD=\"\\\"${target}.vcd\\\"\"" -g2001 -Wall ${A_ARGS} ${A_IVERILOGARGS} ${B_SRCS} ${ICE40_SIM}
   )
 
   if(NOT CAN_SYNTH)
@@ -148,7 +148,7 @@ function(add_synth target)
   else()
     file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/${target}.yocmd" "# Yosys script\n")
     foreach(src ${B_SRCS})
-        file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/${target}.yocmd" "read_verilog ${A_ARGS} ${src}\n")
+        file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/${target}.yocmd" "read_verilog ${A_ARGS} ${A_YOSYSARGS} ${src}\n")
     endforeach()
     file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/${target}.yocmd" "synth_ice40 -abc2 -retime\n")
     file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/${target}.yocmd" "check -noinit -assert\n")

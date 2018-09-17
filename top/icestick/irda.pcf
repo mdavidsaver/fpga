@@ -1,5 +1,6 @@
 set_io sertx 8
 set_io clk 21
+set_io tx2 45
 set_io tx 105
 set_io rx 106
 set_io sd 107

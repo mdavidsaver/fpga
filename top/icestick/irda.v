@@ -34,18 +34,32 @@ module top(
 
     // debug
     output raw, // copy of rx
-    output proc // filtered rx
+    output proc, // filtered rx
+    output tx2
 );
 
-assign tx = 0;
 assign sd = 0;
 
 assign raw = rx;
+assign tx2 = tx;
 
 vbounce bounce(
   .clk(clk),
   .in(~rx), // rx is active low, flip this to active high for sanity
   .out(proc)
+);
+
+wire prog;
+
+vpwm outpwm(
+  .clk(clk),
+  .in(prog),
+  .out(tx)
+);
+
+pulseprog pprog(
+  .clk(clk),
+  .out(prog)
 );
 
 wire valid;
@@ -272,5 +286,70 @@ always @(posedge clk) begin
     end
     endcase
 end
+
+endmodule
+
+// Vishay TFDU4101 can't do true CW output.
+// max pulse width is 50us.  recommended is 0 -> 20us
+// No max. duty factor is specified, but the de-rating plot uses 20% so start there.
+module vpwm(
+    input clk,
+    input in,
+    output out
+);
+
+// 20us / 20% -> 100us period
+// 100us * 12MHz -> 1200 ticks
+// round up to 2048 (11 bits)
+reg [10:0] cnt = 0;
+localparam MAX = 1200;
+localparam THRESHOLD = MAX - 240; // 20us * 12MHz
+
+always @(posedge clk)
+    if(cnt==MAX)
+        cnt <= 0;
+    else
+        cnt <= cnt + 1;
+
+assign out = in & (cnt > THRESHOLD);
+
+endmodule
+
+module pulseprog(
+    input clk,
+    output out
+);
+
+reg [19:0] prog [0:573];
+
+initial $readmemh(`ROMFILE, prog);
+
+reg state = 0;
+reg [9:0] pos = 0;
+reg [18:0] cnt = 0; // period >= 30ms
+
+reg [19:0] inst;
+
+reg out2 = 0;
+assign out = out2;
+
+wire done = cnt==inst[18:0];
+
+always @(posedge clk)
+    if(state==0) begin
+        inst <= prog[pos];
+        state <= 1;
+        cnt <= 0;
+    end else begin
+        cnt <= cnt + 1;
+        out2 <= inst[19];
+        if(done) begin
+            if(pos<573)
+                pos <= pos + 1;
+            else
+                pos <= 0;
+            state <= 0;
+        end
+    end
 
 endmodule
