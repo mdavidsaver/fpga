@@ -1,3 +1,4 @@
+`timescale 1us/1ns
 module uart(
   input  wire       reset,
   input  wire       clk,  // ref clock

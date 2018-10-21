@@ -1,3 +1,4 @@
+`timescale 1us/1ns
 /* Testing SPI devices.
  *
  * debug SPI controls mux to select which

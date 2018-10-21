@@ -1,3 +1,4 @@
+`timescale 1us/1ns
 /* sample buffer with two modes.
  * after reset is circular buffer will silent roll-over
  * after freeze switch to FIFO until full

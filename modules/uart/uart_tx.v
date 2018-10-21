@@ -1,3 +1,4 @@
+`timescale 1us/1ns
 /* RS232 transmitter
 
  protocol

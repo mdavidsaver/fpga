@@ -1,3 +1,4 @@
+`timescale 1us/1ns
 module test;
 
 `include "utest.vlib"
@@ -5,7 +6,7 @@ module test;
 `TEST_PRELUDE(4)
 
 // 25 MHz has 40 nanosecond period
-`TEST_CLOCK(clk,20);
+`TEST_CLOCK(clk,0.02);
 
 `TEST_TIMEOUT(200000)
 

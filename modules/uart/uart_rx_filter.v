@@ -1,3 +1,4 @@
+`timescale 1us/1ns
 module uart_rx_filter(
   input wire clk,
   input wire samp_clk,

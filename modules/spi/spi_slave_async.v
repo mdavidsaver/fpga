@@ -1,3 +1,4 @@
+`timescale 1us/1ns
 /* SPI slave w/o local clock input
  *
  * setup of rising edge of sclk.

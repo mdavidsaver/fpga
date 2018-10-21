@@ -1,3 +1,4 @@
+`timescale 1us/1ns
 module spi_master_inst(
     input clk,   // bit clock
     input reset, // sync reset

@@ -1,3 +1,4 @@
+`timescale 1us/1ns
 module frac_div(
   input  wire in,
   output reg  out

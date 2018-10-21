@@ -1,3 +1,4 @@
+`timescale 1us/1ns
 /* Use the IRDA receiver to decode the messages sent by a Daikin HVAC unit in my apartment
  *
  * I had a leg up using the analysis of: http://rdlab.cdmt.vn/project-2013/daikin-ir-protocol

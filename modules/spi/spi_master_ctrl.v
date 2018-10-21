@@ -1,3 +1,4 @@
+`timescale 1us/1ns
 /* Controller for multiple SPI masters
  *
  * tranfer BYTES with 2 extra bits to deselect between frames.

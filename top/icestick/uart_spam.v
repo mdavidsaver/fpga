@@ -1,3 +1,4 @@
+`timescale 1us/1ns
 // Tx a repeating sequence of charactors
 // to test frame format and baud rate
 module top(

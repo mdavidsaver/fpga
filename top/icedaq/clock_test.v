@@ -1,3 +1,4 @@
+`timescale 1us/1ns
 module top(
     input wire crystal,
     output wire [0:3] gpio0

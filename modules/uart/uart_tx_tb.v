@@ -1,10 +1,11 @@
+`timescale 1us/1ns
 module test;
 
 `include "utest.vlib"
 
 `TEST_PRELUDE(28)
 
-`TEST_CLOCK(clk,1);
+`TEST_CLOCK(clk,0.042); // ~12MHz
 
 `TEST_TIMEOUT(2000)
 

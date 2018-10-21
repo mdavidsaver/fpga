@@ -1,3 +1,4 @@
+`timescale 1us/1ns
 /* Synchronous FIFO
  * Depth is a power of 2 (1<<DEPTH)
  * sync reset must be held high until both wclk and rclk tick once

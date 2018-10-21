@@ -1,3 +1,4 @@
+`timescale 1us/1ns
 /* level and edge detection
  */
 module scope_trigger(

@@ -1,3 +1,4 @@
+`timescale 1us/1ns
 /*
  * Change data when ready, data must remain stable otherwise
  */
