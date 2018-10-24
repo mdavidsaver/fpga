@@ -13,8 +13,6 @@ reg send = 0, reset = 1;
 wire txbusy, rline, ready, tx_bit_clk, rx_bit_clk, samp_clk;
 wire [7:0] drx;
 reg [7:0] dtx;
-reg [7:0] expect;
-reg [7:0] actual;
 
 uart #(
   .Width(2),

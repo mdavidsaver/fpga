@@ -17,16 +17,16 @@ localparam SIZE = 2**ORD;
 reg [0:7] rom [0:(SIZE-1)];
 
 reg [ORD-1:0] pos;
-reg [2:0] bit;
+reg [2:0] bitn;
 
 always @(posedge sclk, posedge ss)
     if(ss)
-        {pos, bit} <= 0;
+        {pos, bitn} <= 0;
     else
-        {pos, bit} = {pos, bit}+1;
+        {pos, bitn} = {pos, bitn}+1;
 
 wire [0:7] cur = rom[pos];
-wire curb = cur[bit];
+wire curb = cur[bitn];
 
 always @(negedge sclk)
     miso <= curb;

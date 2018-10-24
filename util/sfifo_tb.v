@@ -38,22 +38,22 @@ task push;
 endtask
 
 task pop;
-  input [7:0] expect;
+  input [7:0] exp;
   begin
-    $display("# pop %02x", expect);
+    $display("# pop %02x", exp);
     while(~clk) @(posedge clk);
     read <= 1;
     @(posedge clk);
     read <= 0;
-    `ASSERT_EQUAL(dut.rdata, expect, "read elem")
+    `ASSERT_EQUAL(dut.rdata, exp, "read elem")
   end
 endtask
 
 task pushpop;
   input [7:0] val;
-  input [7:0] expect;
+  input [7:0] exp;
   begin
-    $display("# push %02x, pop %02x", val, expect);
+    $display("# push %02x, pop %02x", val, exp);
     while(~clk) @(posedge clk);
     store <= 1;
     wdata <= val;
@@ -62,7 +62,7 @@ task pushpop;
     store <= 0;
     wdata <= 8'hxx;
     read <= 0;
-    `ASSERT_EQUAL(dut.rdata, expect, "read elem")
+    `ASSERT_EQUAL(dut.rdata, exp, "read elem")
   end
 endtask
 

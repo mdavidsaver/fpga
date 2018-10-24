@@ -23,7 +23,6 @@ always @(posedge clk)
 wire clk64 = clk8 & clk64_cnt[3];
 
 reg din, reset=1;
-reg [7:0] expect;
 
 wire ready, bit_clk;
 wire [7:0] data;
@@ -46,10 +45,11 @@ uart_rx #(
 
 task uart_recv;
   input [7:0] val;
+  reg [7:0] exp;
   begin
     $display("# uart_recv %02x", val);
     clk64_cnt = 0;
-    expect = val;
+    exp = val;
     din = 1;
     while(~clk64) @(posedge clk);
     din = ~val[0];
@@ -79,7 +79,7 @@ task uart_recv;
     din = 0;
     `DIAG("Wait for ready")
     while(~ready) @(posedge clk);
-    `ASSERT_EQUAL(expect, data, "expect == data")
+    `ASSERT_EQUAL(exp, data, "exp == data")
   end
 endtask
 

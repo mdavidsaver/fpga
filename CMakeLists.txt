@@ -42,7 +42,7 @@ function(add_isim target)
     COMMENT "Compile ${target}.vvp"
     OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/${target}.vvp
     DEPENDS ${IVERILOG_EXECUTABLE} ${A_SRCS} ${A_DEPENDS}
-    COMMAND ${IVERILOG_EXECUTABLE} -o ${CMAKE_CURRENT_BINARY_DIR}/${target}.vvp -DSIM "-DVCD=\"\\\"${target}.vcd\\\"\"" -g2001 -Wall ${A_ARGS} ${B_SRCS}
+    COMMAND ${IVERILOG_EXECUTABLE} -o ${CMAKE_CURRENT_BINARY_DIR}/${target}.vvp -DSIM "-DVCD=\"\\\"${target}.vcd\\\"\"" -g2009 -Wall ${A_ARGS} ${B_SRCS}
   )
   add_custom_target(${target} ALL
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${target}.vvp
@@ -137,7 +137,7 @@ function(add_synth target)
     COMMENT "Test Compile ${target}.vvp"
     OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/${target}.vvp
     DEPENDS ${IVERILOG_EXECUTABLE} ${A_SRCS} ${A_DEPENDS}
-    COMMAND ${IVERILOG_EXECUTABLE} -o ${CMAKE_CURRENT_BINARY_DIR}/${target}.vvp -DSIM "-DVCD=\"\\\"${target}.vcd\\\"\"" -g2001 -Wall ${A_ARGS} ${A_IVERILOGARGS} ${B_SRCS} ${ICE40_SIM}
+    COMMAND ${IVERILOG_EXECUTABLE} -o ${CMAKE_CURRENT_BINARY_DIR}/${target}.vvp -DSIM "-DVCD=\"\\\"${target}.vcd\\\"\"" -g2009 -Wall ${A_ARGS} ${A_IVERILOGARGS} ${B_SRCS} ${ICE40_SIM}
   )
 
   if(NOT CAN_SYNTH)
