@@ -22,3 +22,15 @@ add_isim(test_spi_slave_async
     ${PROJECT_SOURCE_DIR}/util/utest.vlib
 )
 add_itest(test_spi_slave_async)
+
+add_isim(test_spi_mux
+  SRCS
+    spi_mux_tb.v
+    spi_mux.v
+    spi_rom.v
+  ARGS
+    -I${PROJECT_SOURCE_DIR}/util
+  DEPENDS
+    ${PROJECT_SOURCE_DIR}/util/utest.vlib
+)
+add_itest(test_spi_mux)
