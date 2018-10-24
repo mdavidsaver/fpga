@@ -14,19 +14,9 @@ add_synth(spi_test
   SRCS
       spi_test.v
       ${PROJECT_SOURCE_DIR}/modules/spi/spi_slave_async.v
+      ${PROJECT_SOURCE_DIR}/modules/spi/spi_mux.v
+      ${PROJECT_SOURCE_DIR}/modules/spi/spi_rom.v
 )
-
-add_isim(test_spi_test
-  SRCS
-    spi_test_tb.v
-    spi_test.v
-    ${PROJECT_SOURCE_DIR}/modules/spi/spi_slave_async.v
-  ARGS
-    -I${PROJECT_SOURCE_DIR}/util
-  DEPENDS
-    ${PROJECT_SOURCE_DIR}/util/utest.vlib
-)
-add_itest(test_spi_test)
 
 add_synth(daq_test
   PCF daq_test.pcf

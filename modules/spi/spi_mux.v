@@ -12,10 +12,10 @@ module spi_mux(
     input s_mosi,
     output s_miso,
     // master/downstream interfaces
-    output [0:1] m_ss,
-    output [0:1] m_sclk,
-    output [0:1] m_mosi,
-    input  [0:1] m_miso
+    output [0:5] m_ss,
+    output [0:5] m_sclk,
+    output [0:5] m_mosi,
+    input  [0:5] m_miso
 );
 
 wire [0:7] select;
@@ -33,13 +33,24 @@ select sel(
 wire g_ss = ready ? s_ss : 1'b1;
 wire g_sclk = ready ? s_sclk : 1'b1;
 
-assign m_ss = {select==1 ? g_ss : 1'b1, select==2 ? g_ss : 1'b1};
+assign m_ss = {
+    select==1 ? g_ss : 1'b1,
+    select==2 ? g_ss : 1'b1,
+    select==3 ? g_ss : 1'b1,
+    select==4 ? g_ss : 1'b1,
+    select==5 ? g_ss : 1'b1,
+    select==6 ? g_ss : 1'b1
+};
 
-assign m_sclk = {g_sclk, g_sclk};
-assign m_mosi = {s_mosi, s_mosi};
+assign m_sclk = {6{g_sclk}};
+assign m_mosi = {6{s_mosi}};
 
 assign s_miso = select==1 ? m_miso[0] :
                 select==2 ? m_miso[1] :
+                select==3 ? m_miso[1] :
+                select==4 ? m_miso[1] :
+                select==5 ? m_miso[1] :
+                select==6 ? m_miso[1] :
                 1'b0;
 
 endmodule

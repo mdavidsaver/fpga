@@ -17,7 +17,7 @@ spi_mux dut(
     .s_sclk(sclk),
     .s_mosi(mosi),
     .s_miso(miso),
-    .m_miso(mux_miso)
+    .m_miso({mux_miso, 4'b0})
 );
 
 spi_rom rom1(

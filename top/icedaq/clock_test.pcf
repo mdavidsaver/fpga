@@ -1,4 +1,5 @@
-set_io crystal 90
+set_io clk0 33
+set_io clk1 34
 
 set_io gpio0[0] 28
 set_io gpio0[1] 27

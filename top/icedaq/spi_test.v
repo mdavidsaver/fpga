@@ -44,50 +44,43 @@ module top(
   output [0:1] gpio0
 );
 
-wire dclk, dready;
-wire [0:7] cmd;
-reg [0:7] reply;
+wire rom_ss, rom_sclk, rom_mosi, rom_miso;
+wire unused_ss, unused_sclk, unused_mosi;
 
-spi_slave_async dspi(
-  .ss(~debug_ss),
-  .sclk(~debug_sclk),
-  .mosi(debug_mosi),
-  .miso(debug_miso),
-  .clk(dclk),
-  .ready(dready),
-  .mdat(cmd),
-  .sdat(reply)
+spi_mux mux(
+    .s_ss(ss),
+    .s_sclk(sclk),
+    .s_mosi(mosi),
+    .s_miso(miso),
+    .m_ss({rom_ss, adc1_ss, adc2_ss, dac1_sync, dac1_sync, unused_ss}),
+    .m_sclk({rom_sclk, adc1_sclk, adc2_sclk, dac1_sclk, dac2_sclk, unused_sclk}),
+    .m_mosi({rom_mosi, adc1_mosi, adc2_mosi, dac1_mosi, dac2_mosi, unused_mosi}),
+    .m_miso({rom_miso, adc1_miso, adc2_miso, 3'b000})
 );
 
-assign gpio0 = {dclk, dready};
+spi_rom #(
+    .ORD(4)
+) idrom(
+    .ss(rom_ss),
+    .sclk(rom_sclk),
+    .mosi(rom_mosi),
+    .miso(rom_miso)
+);
 
-reg [0:1] mux;
-
-always @(posedge dclk)
-    if(dready) begin
-        $display("# SPI CMD %x DATA %x", cmd[0:3], cmd[6:7]);
-        reply <= {6'b101000, mux};
-        if(cmd[0:3]==4'h1)
-          mux <= cmd[6:7];
-    end
-
-wire adc1_ss = mux==0 ? ss : 1;
-wire adc2_ss = mux==1 ? ss : 1;
-wire dac1_sync = mux==2 ? ss : 1;
-wire dac2_sync = mux==3 ? ss : 1;
-
-wire adc1_sclk = sclk;
-wire adc2_sclk = sclk;
-wire dac1_sclk = sclk;
-wire dac2_sclk = sclk;
-
-wire adc1_mosi = mosi;
-wire adc2_mosi = mosi;
-wire dac1_mosi = mosi;
-wire dac2_mosi = mosi;
-
-wire miso = mux==0 ? adc1_miso :
-            mux==1 ? adc2_miso :
-            0;
+initial begin
+    idrom.rom[0] = 8'h68;
+    idrom.rom[1] = 8'h65;
+    idrom.rom[2] = 8'h6c;
+    idrom.rom[3] = 8'h6c;
+    idrom.rom[4] = 8'h6f;
+    idrom.rom[5] = 8'h20;
+    idrom.rom[6] = 8'h77;
+    idrom.rom[7] = 8'h6f;
+    idrom.rom[8] = 8'h72;
+    idrom.rom[9] = 8'h6c;
+    idrom.rom[10] = 8'h64;
+    idrom.rom[11] = 8'h21;
+    idrom.rom[12] = 8'h0;
+end
 
 endmodule
