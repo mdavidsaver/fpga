@@ -6,6 +6,7 @@
  * sample on rising (0->1) edge
  */
 module spi_mux(
+    input clk,
     // upstream/slave interface
     input s_ss,   // active low select/reset
     input s_sclk,
@@ -22,6 +23,7 @@ wire [0:7] select;
 wire ready;
 
 select sel(
+    .clk(clk),
     .ss(s_ss),
     .sclk(s_sclk),
     .mosi(s_mosi),
@@ -34,63 +36,67 @@ wire g_ss = ready ? s_ss : 1'b1;
 wire g_sclk = ready ? s_sclk : 1'b1;
 
 assign m_ss = {
-    select==1 ? g_ss : 1'b1,
-    select==2 ? g_ss : 1'b1,
-    select==3 ? g_ss : 1'b1,
-    select==4 ? g_ss : 1'b1,
-    select==5 ? g_ss : 1'b1,
-    select==6 ? g_ss : 1'b1
+    ready & select==1 ? g_ss : 1'b1,
+    ready & select==2 ? g_ss : 1'b1,
+    ready & select==3 ? g_ss : 1'b1,
+    ready & select==4 ? g_ss : 1'b1,
+    ready & select==5 ? g_ss : 1'b1,
+    ready & select==6 ? g_ss : 1'b1
 };
 
 assign m_sclk = {6{g_sclk}};
 assign m_mosi = {6{s_mosi}};
 
-assign s_miso = select==1 ? m_miso[0] :
-                select==2 ? m_miso[1] :
-                select==3 ? m_miso[1] :
-                select==4 ? m_miso[1] :
-                select==5 ? m_miso[1] :
-                select==6 ? m_miso[1] :
+assign s_miso = ready & select==1 ? m_miso[0] :
+                ready & select==2 ? m_miso[1] :
+                ready & select==3 ? m_miso[2] :
+                ready & select==4 ? m_miso[3] :
+                ready & select==5 ? m_miso[4] :
+                ready & select==6 ? m_miso[5] :
+                ready & select==7 ? 1'b1 :
                 1'b0;
 
 endmodule
 
 module select(
+    input clk,
     input ss,
     input sclk,
     input mosi,
     output reg [0:7] select,
-    output ready
+    output reg ready
 );
 
-// previous 6 bits
-reg [0:5] shift;
+reg p_sclk;
 
-always @(posedge sclk, posedge ss)
+always @(posedge clk)
+    p_sclk <= sclk;
+
+wire rise_sclk = ~p_sclk & sclk; // 0 -> 1
+
+always @(posedge clk)
     if(ss)
-        shift <= 0;
+        select <= 0;
+    else if(rise_sclk & ~ready)
+        select <= {select[1:7], mosi};
     else
-        shift <= {shift[1:5], mosi};
+        select <= select;
 
 // count 0 -> 8 and hold at 8
 reg [0:4] state;
 
-always @(posedge sclk, posedge ss)
+always @(posedge clk)
     if(ss)
         state <= 0;
-    else if(state!=8)
+    else if(rise_sclk && state!=8)
         state <= state+1;
-
-// change mux output at end of first byte
-always @(posedge sclk, posedge ss)
-    if(ss)
-        select <= 0;
-    else if(state==6)
-        select <= {shift, mosi};
     else
-        select <= select;
+        state <= state;
 
-// ready at end of second byte
-assign ready = state==8;
+always @(posedge clk)
+    if(ss)
+        ready <= 0;
+    else if(state==8)
+        ready <= 1;
 
 endmodule

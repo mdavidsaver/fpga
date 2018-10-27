@@ -13,6 +13,8 @@
  *  reads back 0b101000__ mux setting 0 -> 3
  */
 module top(
+  input clk, // 25 MHz
+
   input debug_ss,
   input debug_sclk,
   input debug_mosi,
@@ -44,13 +46,19 @@ module top(
   output [0:1] gpio0
 );
 
+// stablize sclk, and others to maintain phase
+reg l_ss, l_sclk, l_mosi;
+always @(posedge clk)
+    {l_ss, l_sclk, l_mosi} <= {ss, sclk, mosi};
+
 wire rom_ss, rom_sclk, rom_mosi, rom_miso;
 wire unused_ss, unused_sclk, unused_mosi;
 
 spi_mux mux(
-    .s_ss(ss),
-    .s_sclk(sclk),
-    .s_mosi(mosi),
+    .clk(clk),
+    .s_ss(l_ss),
+    .s_sclk(l_sclk),
+    .s_mosi(l_mosi),
     .s_miso(miso),
     .m_ss({rom_ss, adc1_ss, adc2_ss, dac1_sync, dac1_sync, unused_ss}),
     .m_sclk({rom_sclk, adc1_sclk, adc2_sclk, dac1_sclk, dac2_sclk, unused_sclk}),
@@ -59,28 +67,14 @@ spi_mux mux(
 );
 
 spi_rom #(
-    .ORD(4)
+    .SIZE(16),
+    .INITFILE(`ROMFILE)
 ) idrom(
+    .clk(clk),
     .ss(rom_ss),
     .sclk(rom_sclk),
     .mosi(rom_mosi),
     .miso(rom_miso)
 );
-
-initial begin
-    idrom.rom[0] = 8'h68;
-    idrom.rom[1] = 8'h65;
-    idrom.rom[2] = 8'h6c;
-    idrom.rom[3] = 8'h6c;
-    idrom.rom[4] = 8'h6f;
-    idrom.rom[5] = 8'h20;
-    idrom.rom[6] = 8'h77;
-    idrom.rom[7] = 8'h6f;
-    idrom.rom[8] = 8'h72;
-    idrom.rom[9] = 8'h6c;
-    idrom.rom[10] = 8'h64;
-    idrom.rom[11] = 8'h21;
-    idrom.rom[12] = 8'h0;
-end
 
 endmodule

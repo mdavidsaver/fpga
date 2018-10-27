@@ -5,6 +5,8 @@ module test;
 
 `TEST_PRELUDE(14)
 
+`TEST_CLOCK(clk, 0.04);
+
 `TEST_TIMEOUT(6000)
 
 reg sclk, ss, mosi;
@@ -13,6 +15,7 @@ wire miso;
 wire [0:1] mux_miso;
 
 spi_mux dut(
+    .clk(clk),
     .s_ss(ss),
     .s_sclk(sclk),
     .s_mosi(mosi),
@@ -21,6 +24,7 @@ spi_mux dut(
 );
 
 spi_rom rom1(
+    .clk(clk),
     .ss(dut.m_ss[0]),
     .sclk(dut.m_sclk[0]),
     .mosi(dut.m_mosi[0]),
@@ -28,6 +32,7 @@ spi_rom rom1(
 );
 
 spi_rom rom2(
+    .clk(clk),
     .ss(dut.m_ss[1]),
     .sclk(dut.m_sclk[1]),
     .mosi(dut.m_mosi[1]),
@@ -60,11 +65,11 @@ initial
 begin
   `TEST_INIT(test)
 
-  rom1.rom[0] = 8'h12;
-  rom1.rom[2] = 8'h34;
+  rom1.rom[0] <= 8'h52;
+  rom1.rom[2] <= 8'h34;
 
-  rom2.rom[0] = 8'h01;
-  rom2.rom[2] = 8'h02;
+  rom2.rom[0] <= 8'h01;
+  rom2.rom[2] <= 8'h02;
 
   ss <= 1;
   sclk <= 1;
@@ -74,9 +79,9 @@ begin
   ss <= 0;
 
   #10
-  xfer(2, 8'b0000000x);
+  xfer(1, 8'h00);
   #10
-  xfer(8'hxx, 8'h12);
+  xfer(8'hxx, 8'h52);
   #10
   xfer(8'hxx, 8'hxx);
   #10
@@ -95,7 +100,7 @@ begin
   ss <= 0;
 
   #10
-  xfer(4, 0);
+  xfer(2, 0);
   #10
   xfer(8'hxx, 8'h01);
   #10

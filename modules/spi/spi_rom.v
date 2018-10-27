@@ -5,30 +5,48 @@
  * setup on falling (1->0) edge
  */
 module spi_rom(
+    input clk,
     input ss,   // active low select/reset
     input sclk,
     input mosi,
     output reg miso
 );
 
-parameter ORD = 3;
-localparam SIZE = 2**ORD;
+reg p_sclk;
+
+always @(posedge clk)
+    p_sclk <= sclk;
+
+wire fall_sclk = p_sclk & ~sclk; // 1 -> 0
+
+parameter SIZE = 8;
+localparam ORD = $clog2(SIZE);
+
+parameter INITFILE = "";
+localparam x = $size(INITFILE);
 
 reg [0:7] rom [0:(SIZE-1)];
 
 reg [ORD-1:0] pos;
 reg [2:0] bitn;
 
-always @(posedge sclk, posedge ss)
+always @(posedge clk)
     if(ss)
-        {pos, bitn} <= 0;
+        {pos, bitn} <= {ORD-1+8{1'b1}};
+    else if(fall_sclk)
+        {pos, bitn} <= {pos, bitn}+1;
     else
-        {pos, bitn} = {pos, bitn}+1;
+        {pos, bitn} <= {pos, bitn};
 
 wire [0:7] cur = rom[pos];
 wire curb = cur[bitn];
 
-always @(negedge sclk)
+always @(posedge clk)
     miso <= curb;
+
+initial begin
+    if($size(INITFILE)>0)
+        $readmemh(INITFILE, rom);
+end
 
 endmodule

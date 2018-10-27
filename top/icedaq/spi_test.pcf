@@ -1,3 +1,5 @@
+set_io clk 34
+
 # SPI1 w/ CE2 on RPi
 set_io debug_ss 49
 set_io debug_sclk 48

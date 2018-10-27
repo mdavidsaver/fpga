@@ -6,8 +6,14 @@ include(CMakeParseArguments)
 
 find_package(Perl REQUIRED)
 
-find_program(IVERILOG_EXECUTABLE iverilog)
-find_program(VVP_EXECUTABLE vvp)
+find_program(IVERILOG_EXECUTABLE iverilog
+  HINTS IVERILOG_PREFIX ENV IVERILOG_PREFIX
+  PATH_SUFFIXES bin
+)
+find_program(VVP_EXECUTABLE vvp
+  HINTS IVERILOG_PREFIX ENV IVERILOG_PREFIX
+  PATH_SUFFIXES bin
+)
 
 message(STATUS "IVERILOG ${IVERILOG_EXECUTABLE}")
 message(STATUS "VVP ${VVP_EXECUTABLE}")
@@ -42,7 +48,7 @@ function(add_isim target)
     COMMENT "Compile ${target}.vvp"
     OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/${target}.vvp
     DEPENDS ${IVERILOG_EXECUTABLE} ${A_SRCS} ${A_DEPENDS}
-    COMMAND ${IVERILOG_EXECUTABLE} -o ${CMAKE_CURRENT_BINARY_DIR}/${target}.vvp -DSIM "-DVCD=\"\\\"${target}.vcd\\\"\"" -g2009 -Wall ${A_ARGS} ${B_SRCS}
+    COMMAND ${IVERILOG_EXECUTABLE} -o ${CMAKE_CURRENT_BINARY_DIR}/${target}.vvp -DSIM "-DVCD=\"\\\"${target}.vcd\\\"\"" -g2012 -Wall ${A_ARGS} ${B_SRCS}
   )
   add_custom_target(${target} ALL
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${target}.vvp
@@ -137,7 +143,7 @@ function(add_synth target)
     COMMENT "Test Compile ${target}.vvp"
     OUTPUT  ${CMAKE_CURRENT_BINARY_DIR}/${target}.vvp
     DEPENDS ${IVERILOG_EXECUTABLE} ${A_SRCS} ${A_DEPENDS}
-    COMMAND ${IVERILOG_EXECUTABLE} -o ${CMAKE_CURRENT_BINARY_DIR}/${target}.vvp -DSIM "-DVCD=\"\\\"${target}.vcd\\\"\"" -g2009 -Wall ${A_ARGS} ${A_IVERILOGARGS} ${B_SRCS} ${ICE40_SIM}
+    COMMAND ${IVERILOG_EXECUTABLE} -o ${CMAKE_CURRENT_BINARY_DIR}/${target}.vvp -DSIM "-DVCD=\"\\\"${target}.vcd\\\"\"" -g2012 -Wall ${A_ARGS} ${A_IVERILOGARGS} ${B_SRCS} ${ICE40_SIM}
   )
 
   if(NOT CAN_SYNTH)
@@ -148,7 +154,7 @@ function(add_synth target)
   else()
     file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/${target}.yocmd" "# Yosys script\n")
     foreach(src ${B_SRCS})
-        file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/${target}.yocmd" "read_verilog ${A_ARGS} ${A_YOSYSARGS} ${src}\n")
+        file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/${target}.yocmd" "read_verilog -sv ${A_ARGS} ${A_YOSYSARGS} ${src}\n")
     endforeach()
     file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/${target}.yocmd" "synth_ice40 -abc2 -retime\n")
     file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/${target}.yocmd" "check -noinit -assert\n")
