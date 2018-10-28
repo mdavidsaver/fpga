@@ -3,11 +3,19 @@ sudo: required
 addons:
   apt:
     packages:
+      - gperf
       - cmake
-      - iverilog
       - avr-libc
+      - libftdi-dev
 language: c
+cache:
+  directories:
+   - $HOME/.cache
+env:
+  - IVERILOG_PREFIX=$HOME/.cache/usr YOSYS_PREFIX=$HOME/.cache/usr ARACHNE_PREFIX=$HOME/.cache/usr ICESTORM_PREFIX=$HOME/.cache/usr
 install:
+  - python build-tools.py
+  - ls $HOME/.cache/usr/bin
   - mkdir build
   - (cd build && cmake ..)
   - make -C build -j2 VERBOSE=1
