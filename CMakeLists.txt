@@ -156,7 +156,7 @@ function(add_synth target)
     foreach(src ${B_SRCS})
         file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/${target}.yocmd" "read_verilog -sv ${A_ARGS} ${A_YOSYSARGS} ${src}\n")
     endforeach()
-    file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/${target}.yocmd" "synth_ice40 -abc2 -retime\n")
+    file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/${target}.yocmd" "synth_ice40\n")
     file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/${target}.yocmd" "check -noinit -assert\n")
     file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/${target}.yocmd" "write_blif -gates -attr -param ${CMAKE_CURRENT_BINARY_DIR}/${target}.blif\n")
 
