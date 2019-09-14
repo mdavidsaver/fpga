@@ -80,3 +80,21 @@ add_synth(irda
   YOSYSARGS
     "-DROMFILE=\"${CMAKE_CURRENT_SOURCE_DIR}/daikin.list\""
 )
+
+add_isim(test_icela
+  SRCS
+    icela.v
+    icela_tb.v
+  ARGS
+    -I${PROJECT_SOURCE_DIR}/util
+  DEPENDS
+    ${PROJECT_SOURCE_DIR}/util/utest.vlib
+)
+add_itest(test_icela)
+
+add_synth(icela
+  PCF icela.pcf
+  MAXCLOCK 12.0
+  SRCS
+    icela.v
+)
