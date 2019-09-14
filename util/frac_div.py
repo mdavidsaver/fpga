@@ -9,10 +9,21 @@ import sys, math
 
 log2 = lambda v:int(ceil(log(v,2)))
 
-Fin = float(sys.argv[1])
-Fout = float(sys.argv[2])
-if len(sys.argv)>3:
-    Fout *= float(sys.argv[3])
+def getargs():
+    from argparse import ArgumentParser
+    P = ArgumentParser()
+    P.add_argument('Fin', type=float,
+                   help='Input clock frequency')
+    P.add_argument('Fout', type=float,
+                   help='Desired output frequency')
+    P.add_argument('M', nargs='?', type=int, default=1,
+                   help='Optional multipler on output frequency')
+    return P.parse_args()
+
+args = getargs()
+
+Fin = args.Fin
+Fout = args.Fout*args.M
 
 F = Fin/Fout
 print("Input  freq", Fin, "Hz")
