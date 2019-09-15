@@ -98,3 +98,11 @@ add_synth(icela
   SRCS
     icela.v
 )
+
+add_synth(irdala
+  PCF irdala.pcf
+  MAXCLOCK 12.0
+  SRCS
+    irdala.v
+    icela.v
+)
