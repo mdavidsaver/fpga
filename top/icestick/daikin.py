@@ -101,7 +101,7 @@ class Daikin(serial.Serial):
         assert line[-1:]==b'\n', line[-10:]
 
         line = line[1:-1]
-        assert len(line)%8==0, len(line)
+        assert len(line)%8==0, (len(line), line)
 
         return line
 
