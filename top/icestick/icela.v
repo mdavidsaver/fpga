@@ -148,7 +148,7 @@ module fifo(
     reg [31:0] data_out;
     reg data_ready = 0;
 
-    reg [31:0] ram [0:2048];
+    reg [31:0] ram [0:2047];
     reg [10:0] ram_in = 0;
     reg [10:0] ram_out = 0;
 
